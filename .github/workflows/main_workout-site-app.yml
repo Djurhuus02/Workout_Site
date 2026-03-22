@@ -5,65 +5,65 @@ name: Build and deploy Node.js app to Azure Web App - workout-site-app
 
 on:
   push:
-      branches:
-            - main
-              workflow_dispatch:
+    branches:
+      - main
+  workflow_dispatch:
 
-              jobs:
-                build:
-                    runs-on: ubuntu-latest
-                        permissions:
-                              contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
 
-                                  steps:
-                                        - uses: actions/checkout@v4
+    steps:
+      - uses: actions/checkout@v4
 
-                                              - name: Set up Node.js version
-                                                      uses: actions/setup-node@v3
-                                                              with:
-                                                                        node-version: '20.x'
+      - name: Set up Node.js version
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20.x'
 
-                                                                              - name: npm install and build
-                                                                                      run: |
-                                                                                                npm install
-                                                                                                          npm run build
-                                                                                                          
-                                                                                                                - name: Copy server files to dist
-                                                                                                                        run: |
-                                                                                                                                  cp server.js dist/server.js
-                                                                                                                                            cp package.json dist/package.json
-                                                                                                                                                      cp package-lock.json dist/package-lock.json
-                                                                                                                                                      
-                                                                                                                                                            - name: Upload artifact for deployment job
-                                                                                                                                                                    uses: actions/upload-artifact@v4
-                                                                                                                                                                            with:
-                                                                                                                                                                                      name: node-app
-                                                                                                                                                                                                path: dist/
-                                                                                                                                                                                                
-                                                                                                                                                                                                  deploy:
-                                                                                                                                                                                                      runs-on: ubuntu-latest
-                                                                                                                                                                                                          needs: build
-                                                                                                                                                                                                              permissions:
-                                                                                                                                                                                                                    id-token: write
-                                                                                                                                                                                                                          contents: read
-                                                                                                                                                                                                                          
-                                                                                                                                                                                                                              steps:
-                                                                                                                                                                                                                                    - name: Download artifact from build job
-                                                                                                                                                                                                                                            uses: actions/download-artifact@v4
-                                                                                                                                                                                                                                                    with:
-                                                                                                                                                                                                                                                              name: node-app
-                                                                                                                                                                                                                                                              
-                                                                                                                                                                                                                                                                    - name: Login to Azure
-                                                                                                                                                                                                                                                                            uses: azure/login@v2
-                                                                                                                                                                                                                                                                                    with:
-                                                                                                                                                                                                                                                                                              client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_2A3BC1B54E364246B4F9F6770CB195CC }}
-                                                                                                                                                                                                                                                                                                        tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_EE1A840266894F18A22542F7CE4979B1 }}
-                                                                                                                                                                                                                                                                                                                  subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_363C426F78BD432AB98C1D493178A50B }}
-                                                                                                                                                                                                                                                                                                                  
-                                                                                                                                                                                                                                                                                                                        - name: Deploy to Azure Web App
-                                                                                                                                                                                                                                                                                                                                id: deploy-to-webapp
-                                                                                                                                                                                                                                                                                                                                        uses: azure/webapps-deploy@v3
-                                                                                                                                                                                                                                                                                                                                                with:
-                                                                                                                                                                                                                                                                                                                                                          app-name: 'workout-site-app'
-                                                                                                                                                                                                                                                                                                                                                                    slot-name: 'Production'
-                                                                                                                                                                                                                                                                                                                                                                              package: .
+      - name: npm install and build
+        run: |
+          npm install
+          npm run build
+
+      - name: Copy server files to dist
+        run: |
+          cp server.js dist/server.js
+          cp package.json dist/package.json
+          cp package-lock.json dist/package-lock.json
+
+      - name: Upload artifact for deployment job
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-app
+          path: dist/
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Download artifact from build job
+        uses: actions/download-artifact@v4
+        with:
+          name: node-app
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_2A3BC1B54E364246B4F9F6770CB195CC }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_EE1A840266894F18A22542F7CE4979B1 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_363C426F78BD432AB98C1D493178A50B }}
+
+      - name: Deploy to Azure Web App
+        id: deploy-to-webapp
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'workout-site-app'
+          slot-name: 'Production'
+          package: .
