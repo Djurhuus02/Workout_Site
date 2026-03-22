@@ -1,147 +1,100 @@
 import { useState, useEffect, useCallback } from 'react'
-import { WorkoutExercise, WorkoutSet, WorkoutSession } from '../types'
+import { WorkoutSession } from '../types'
+import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
 
-const STORAGE_KEY = 'lift_tracker_active_workout'
-
-function genId() {
-  return Math.random().toString(36).slice(2, 11)
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
 }
 
-interface ActiveWorkout {
-  id: string
-  name: string
-  startTime: number
-  exercises: WorkoutExercise[]
-}
-
-function load(): ActiveWorkout | null {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return null
-    return JSON.parse(raw) as ActiveWorkout
-  } catch {
-    return null
-  }
-}
-
-export function useActiveWorkout() {
-  const [active, setActive] = useState<ActiveWorkout | null>(() => load())
-
-  useEffect(() => {
-    if (active) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(active))
-    } else {
-      localStorage.removeItem(STORAGE_KEY)
-    }
-  }, [active])
-
-  const startWorkout = useCallback((name?: string) => {
-    const now = new Date()
-    const defaultName = `Workout – ${now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' })}`
-    setActive({
-      id: genId(),
-      name: name ?? defaultName,
-      startTime: Date.now(),
-      exercises: [],
-    })
-  }, [])
-
-  const addExercise = useCallback((exerciseId: string, exerciseName: string) => {
-    const defaultSet: WorkoutSet = { id: genId(), weight: 0, reps: 0, completed: false }
-    const entry: WorkoutExercise = {
-      id: genId(),
-      exerciseId,
-      exerciseName,
-      sets: [defaultSet],
-    }
-    setActive(prev => prev ? { ...prev, exercises: [...prev.exercises, entry] } : prev)
-  }, [])
-
-  const removeExercise = useCallback((entryId: string) => {
-    setActive(prev => prev
-      ? { ...prev, exercises: prev.exercises.filter(e => e.id !== entryId) }
-      : prev
-    )
-  }, [])
-
-  const addSet = useCallback((entryId: string, previousSet?: WorkoutSet) => {
-    const newSet: WorkoutSet = {
-      id: genId(),
-      weight: previousSet?.weight ?? 0,
-      reps: previousSet?.reps ?? 0,
-      completed: false,
-    }
-    setActive(prev => prev
-      ? {
-          ...prev,
-          exercises: prev.exercises.map(e =>
-            e.id === entryId ? { ...e, sets: [...e.sets, newSet] } : e
-          ),
-        }
-      : prev
-    )
-  }, [])
-
-  const removeSet = useCallback((entryId: string, setId: string) => {
-    setActive(prev => prev
-      ? {
-          ...prev,
-          exercises: prev.exercises.map(e =>
-            e.id === entryId
-              ? { ...e, sets: e.sets.filter(s => s.id !== setId) }
-              : e
-          ),
-        }
-      : prev
-    )
-  }, [])
-
-  const updateSet = useCallback((entryId: string, setId: string, patch: Partial<WorkoutSet>) => {
-    setActive(prev => prev
-      ? {
-          ...prev,
-          exercises: prev.exercises.map(e =>
-            e.id === entryId
-              ? { ...e, sets: e.sets.map(s => s.id === setId ? { ...s, ...patch } : s) }
-              : e
-          ),
-        }
-      : prev
-    )
-  }, [])
-
-  const updateWorkoutName = useCallback((name: string) => {
-    setActive(prev => prev ? { ...prev, name } : prev)
-  }, [])
-
-  const finishWorkout = useCallback((): WorkoutSession | null => {
-    if (!active) return null
-    const session: WorkoutSession = {
-      id: active.id,
-      date: new Date(active.startTime).toISOString(),
-      name: active.name,
-      exercises: active.exercises,
-      durationSeconds: Math.round((Date.now() - active.startTime) / 1000),
-    }
-    setActive(null)
-    return session
-  }, [active])
-
-  const discardWorkout = useCallback(() => {
-    setActive(null)
-  }, [])
+function ensureWorkoutId(workout: WorkoutSession): WorkoutSession {
+  if (isUuid(workout.id)) return workout
 
   return {
-    active,
-    isActive: active !== null,
-    startWorkout,
-    addExercise,
-    removeExercise,
-    addSet,
-    removeSet,
-    updateSet,
-    updateWorkoutName,
-    finishWorkout,
-    discardWorkout,
+    ...workout,
+    id: crypto.randomUUID(),
   }
+}
+
+export function useWorkouts() {
+  const [workouts, setWorkouts] = useState<WorkoutSession[]>([])
+  const [loading, setLoading] = useState(true)
+  const { user } = useAuth()
+
+  // Load workouts from Supabase
+  useEffect(() => {
+    if (!user) {
+      setWorkouts([])
+      setLoading(false)
+      return
+    }
+
+    const fetchWorkouts = async () => {
+      setLoading(true)
+
+      const { data, error } = await supabase
+        .from('workouts')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching workouts:', error)
+      } else if (data) {
+        setWorkouts(data.map(row => row.data as WorkoutSession))
+      }
+
+      setLoading(false)
+    }
+
+    fetchWorkouts()
+  }, [user])
+
+  const addWorkout = useCallback(async (workout: WorkoutSession) => {
+    if (!user) return
+
+    const workoutToSave = ensureWorkoutId(workout)
+
+    setWorkouts(prev => [workoutToSave, ...prev])
+
+    const { error } = await supabase
+      .from('workouts')
+      .insert({
+        id: workoutToSave.id,
+        user_id: user.id,
+        data: workoutToSave,
+      })
+
+    if (error) {
+      console.error('Error saving workout:', error)
+      setWorkouts(prev => prev.filter(w => w.id !== workoutToSave.id))
+    }
+  }, [user])
+
+  const deleteWorkout = useCallback(async (id: string) => {
+    if (!user) return
+
+    const previous = workouts
+    setWorkouts(prev => prev.filter(w => w.id !== id))
+
+    const { error } = await supabase
+      .from('workouts')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id)
+
+    if (error) {
+      console.error('Error deleting workout:', error)
+      setWorkouts(previous)
+    }
+  }, [user, workouts])
+
+  const getLastSession = useCallback((exerciseId: string, excludeWorkoutId?: string) => {
+    return workouts.find(w =>
+      w.id !== excludeWorkoutId &&
+      w.exercises.some(e => e.exerciseId === exerciseId)
+    ) ?? null
+  }, [workouts])
+
+  return { workouts, loading, addWorkout, deleteWorkout, getLastSession }
 }
