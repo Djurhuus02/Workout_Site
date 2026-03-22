@@ -3,12 +3,24 @@ import { WorkoutSession } from '../types'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 
+function isUuid(value: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+}
+
+function ensureWorkoutId(workout: WorkoutSession): WorkoutSession {
+  if (isUuid(workout.id)) return workout
+
+  return {
+    ...workout,
+    id: crypto.randomUUID(),
+  }
+}
+
 export function useWorkouts() {
   const [workouts, setWorkouts] = useState<WorkoutSession[]>([])
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
 
-  // Load workouts from Supabase
   useEffect(() => {
     if (!user) {
       setWorkouts([])
@@ -18,6 +30,7 @@ export function useWorkouts() {
 
     const fetchWorkouts = async () => {
       setLoading(true)
+
       const { data, error } = await supabase
         .from('workouts')
         .select('*')
@@ -29,6 +42,7 @@ export function useWorkouts() {
       } else if (data) {
         setWorkouts(data.map(row => row.data as WorkoutSession))
       }
+
       setLoading(false)
     }
 
@@ -38,19 +52,21 @@ export function useWorkouts() {
   const addWorkout = useCallback(async (workout: WorkoutSession) => {
     if (!user) return
 
-    setWorkouts(prev => [workout, ...prev])
+    const workoutToSave = ensureWorkoutId(workout)
+
+    setWorkouts(prev => [workoutToSave, ...prev])
 
     const { error } = await supabase
       .from('workouts')
       .insert({
-        id: workout.id,
+        id: workoutToSave.id,
         user_id: user.id,
-        data: workout,
+        data: workoutToSave,
       })
 
     if (error) {
       console.error('Error saving workout:', error)
-      setWorkouts(prev => prev.filter(w => w.id !== workout.id))
+      setWorkouts(prev => prev.filter(w => w.id !== workoutToSave.id))
     }
   }, [user])
 
@@ -73,9 +89,10 @@ export function useWorkouts() {
   }, [user, workouts])
 
   const getLastSession = useCallback((exerciseId: string, excludeWorkoutId?: string) => {
-    return workouts.find(w =>
-      w.id !== excludeWorkoutId &&
-      w.exercises.some(e => e.exerciseId === exerciseId)
+    return workouts.find(
+      w =>
+        w.id !== excludeWorkoutId &&
+        w.exercises.some(e => e.exerciseId === exerciseId)
     ) ?? null
   }, [workouts])
 
