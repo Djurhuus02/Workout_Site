@@ -1,6 +1,3 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
 name: Build and deploy Node.js app to Azure Web App - workout-site-app
 
 on:
@@ -12,30 +9,28 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
+
+    env:
+      VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
 
     steps:
       - uses: actions/checkout@v4
 
       - name: Set up Node.js version
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version: '20'
 
       - name: npm install and build
         run: |
           npm install
           npm run build
-        env:
-          VITE_SUPABASE_URL: https://qrtcxdikepltjvdfzeqr.supabase.co
-          VITE_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFydGN4ZGlrZXBsdGp2ZGZ6ZXFyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxMTEwMzUsImV4cCI6MjA4OTY4NzAzNX0.1sEYiwwT8PpRRJqUqaXAgyRbZKo1r9plUZQ1eMq2zao
 
       - name: Copy server files to dist
         run: |
           cp server.js dist/server.js
           cp package.json dist/package.json
-          cp package-lock.json dist/package-lock.json
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -46,9 +41,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build
-    permissions:
-      id-token: write
-      contents: read
+    environment:
+      name: Production
+      url: ${{ steps.deploy-to-webapp.outputs.webapp-url }}
 
     steps:
       - name: Download artifact from build job
@@ -56,17 +51,11 @@ jobs:
         with:
           name: node-app
 
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_2A3BC1B54E364246B4F9F6770CB195CC }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_EE1A840266894F18A22542F7CE4979B1 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_363C426F78BD432AB98C1D493178A50B }}
-
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'workout-site-app'
           slot-name: 'Production'
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
           package: .
