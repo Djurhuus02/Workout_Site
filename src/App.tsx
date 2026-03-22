@@ -2,16 +2,18 @@ import { useState } from 'react'
 import { Page } from './types'
 import { useWorkouts } from './hooks/useWorkouts'
 import { useActiveWorkout } from './hooks/useActiveWorkout'
+import { AuthProvider, useAuth } from './context/AuthContext'
 import Navigation from './components/Navigation'
 import Dashboard from './pages/Dashboard'
 import ActiveWorkout from './pages/ActiveWorkout'
 import History from './pages/History'
 import Exercises from './pages/Exercises'
 import Progress from './pages/Progress'
+import Login from './pages/Login'
 
-export default function App() {
+function AppContent() {
   const [page, setPage] = useState<Page>('dashboard')
-
+  const { user, loading: authLoading, signOut } = useAuth()
   const workoutsHook = useWorkouts()
   const activeHook = useActiveWorkout()
 
@@ -19,6 +21,18 @@ export default function App() {
     const session = activeHook.finishWorkout()
     if (session) workoutsHook.addWorkout(session)
     setPage('dashboard')
+  }
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center">
+        <div className="text-gray-400">Loading...</div>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <Login />
   }
 
   return (
@@ -31,6 +45,14 @@ export default function App() {
           minHeight: '100dvh',
         }}
       >
+        <div className="flex justify-end px-4 pt-2">
+          <button
+            onClick={signOut}
+            className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+          >
+            Sign out
+          </button>
+        </div>
         {page === 'dashboard' && (
           <Dashboard
             workouts={workoutsHook.workouts}
@@ -39,7 +61,6 @@ export default function App() {
             onDeleteWorkout={workoutsHook.deleteWorkout}
           />
         )}
-
         {page === 'workout' && (
           <ActiveWorkout
             active={activeHook.active}
@@ -56,26 +77,26 @@ export default function App() {
             getLastSession={workoutsHook.getLastSession}
           />
         )}
-
         {page === 'history' && (
           <History
             workouts={workoutsHook.workouts}
             onDelete={workoutsHook.deleteWorkout}
           />
         )}
-
         {page === 'exercises' && <Exercises />}
-
         {page === 'progress' && (
           <Progress workouts={workoutsHook.workouts} />
         )}
       </div>
-
-      <Navigation
-        current={page}
-        onChange={setPage}
-        hasActive={activeHook.isActive}
-      />
+      <Navigation current={page} onChange={setPage} hasActive={activeHook.isActive} />
     </div>
+  )
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   )
 }
