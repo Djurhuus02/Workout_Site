@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Page } from './types'
 import { useWorkouts } from './hooks/useWorkouts'
 import { useActiveWorkout } from './hooks/useActiveWorkout'
+import { useUserSettings } from './hooks/useUserSettings'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Navigation from './components/Navigation'
 import Dashboard from './pages/Dashboard'
@@ -16,6 +17,7 @@ function AppContent() {
   const { user, loading: authLoading, signOut } = useAuth()
   const workoutsHook = useWorkouts()
   const activeHook = useActiveWorkout()
+  const settingsHook = useUserSettings()
 
   const handleWorkoutFinish = () => {
     const session = activeHook.finishWorkout()
@@ -52,6 +54,8 @@ function AppContent() {
             onNavigate={setPage}
             onDeleteWorkout={workoutsHook.deleteWorkout}
             onStartTemplate={activeHook.startWorkoutFromTemplate}
+            weeklyGoal={settingsHook.weeklyGoal}
+            onSaveWeeklyGoal={settingsHook.saveWeeklyGoal}
             signOut={signOut}
             user={user}
           />

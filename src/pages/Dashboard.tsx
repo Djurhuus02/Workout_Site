@@ -89,13 +89,16 @@ interface Props {
   onNavigate: (page: Page) => void
   onDeleteWorkout: (id: string) => void
   onStartTemplate: (name: string, exercises: { exerciseId: string; exerciseName: string }[]) => void
+  weeklyGoal: number | null
+  onSaveWeeklyGoal: (goal: number | null) => void
   signOut: () => void
   user?: User | null
 }
 
-export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWorkout, onStartTemplate, signOut, user }: Props) {
+export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWorkout, onStartTemplate, weeklyGoal, onSaveWeeklyGoal, signOut, user }: Props) {
   const [mounted, setMounted] = useState(false)
   const [hoveredTemplate, setHoveredTemplate] = useState<number | null>(null)
+  const [showGoalPicker, setShowGoalPicker] = useState(false)
 
   useEffect(() => {
     requestAnimationFrame(() => setMounted(true))
@@ -143,6 +146,11 @@ export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWork
   const volumeDisplay = weekVolume >= 1000
     ? `${(weekVolume / 1000).toFixed(1)}t`
     : `${weekVolume}`
+
+  const saveGoal = (goal: number) => {
+    onSaveWeeklyGoal(goal)
+    setShowGoalPicker(false)
+  }
 
   const hasWorkouts = workouts.length > 0
   const transition = (delay = 0) =>
@@ -213,12 +221,29 @@ export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWork
               <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 500 }}>This week</p>
               <p style={{ margin: '6px 0 0', fontSize: 13, color: 'rgba(255,255,255,0.25)' }}>No workouts yet</p>
             </div>
-            <div style={{
-              background: 'rgba(249,115,22,0.06)', border: '1px solid rgba(249,115,22,0.12)',
-              borderRadius: 14, padding: '16px 18px',
-            }}>
+            <div
+              onClick={() => setShowGoalPicker(true)}
+              style={{
+                background: 'rgba(249,115,22,0.06)', border: '1px solid rgba(249,115,22,0.12)',
+                borderRadius: 14, padding: '16px 18px', cursor: 'pointer',
+              }}>
               <p style={{ margin: 0, fontSize: 11, color: 'rgba(249,115,22,0.6)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 500 }}>Weekly goal</p>
-              <p style={{ margin: '6px 0 0', fontSize: 13, color: '#F97316' }}>Set a target →</p>
+              {weeklyGoal ? (
+                <>
+                  <p style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: '#F97316', fontFamily: "'Space Mono', monospace" }}>
+                    {thisWeek.length}/{weeklyGoal}
+                  </p>
+                  <div style={{ height: 3, borderRadius: 2, background: 'rgba(249,115,22,0.2)', marginTop: 4 }}>
+                    <div style={{
+                      height: '100%', borderRadius: 2, background: '#F97316',
+                      width: `${Math.min(100, (thisWeek.length / weeklyGoal) * 100)}%`,
+                      transition: 'width 0.4s ease',
+                    }} />
+                  </div>
+                </>
+              ) : (
+                <p style={{ margin: '6px 0 0', fontSize: 13, color: '#F97316' }}>Set a target →</p>
+              )}
             </div>
           </>
         )}
@@ -339,6 +364,60 @@ export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWork
           </>
         )}
       </div>
+
+      {/* Weekly goal picker modal */}
+      {showGoalPicker && (
+        <div
+          onClick={() => setShowGoalPicker(false)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+            backdropFilter: 'blur(4px)', zIndex: 200,
+            display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: '#1a1d24', borderRadius: '20px 20px 0 0',
+              border: '1px solid rgba(255,255,255,0.08)',
+              padding: '24px 24px 40px', width: '100%', maxWidth: 512,
+            }}
+          >
+            <p style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.9)' }}>
+              Weekly workout goal
+            </p>
+            <p style={{ margin: '0 0 20px', fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>
+              How many workouts do you want to hit each week?
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10 }}>
+              {[2, 3, 4, 5, 6].map(n => (
+                <button
+                  key={n}
+                  onClick={() => saveGoal(n)}
+                  style={{
+                    padding: '14px 0', borderRadius: 12,
+                    fontSize: 20, fontWeight: 700, cursor: 'pointer',
+                    background: weeklyGoal === n ? '#F97316' : 'rgba(255,255,255,0.06)',
+                    border: weeklyGoal === n ? 'none' : '1px solid rgba(255,255,255,0.08)',
+                    color: weeklyGoal === n ? 'white' : 'rgba(255,255,255,0.7)',
+                    fontFamily: "'Space Mono', monospace",
+                  }}
+                >{n}</button>
+              ))}
+            </div>
+            {weeklyGoal && (
+              <button
+                onClick={() => { onSaveWeeklyGoal(null); setShowGoalPicker(false) }}
+                style={{
+                  marginTop: 16, width: '100%', padding: '12px', borderRadius: 12,
+                  background: 'none', border: '1px solid rgba(255,255,255,0.08)',
+                  color: 'rgba(255,255,255,0.35)', fontSize: 13, fontFamily: 'inherit', cursor: 'pointer',
+                }}
+              >Remove goal</button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
