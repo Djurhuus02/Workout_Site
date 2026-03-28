@@ -199,54 +199,58 @@ export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWork
 
       {/* Stats */}
       <div style={{
-        padding: '20px 24px 0',
-        display: 'grid', gridTemplateColumns: hasWorkouts ? '1fr 1fr 1fr' : '1fr 1fr', gap: 10,
+        padding: '20px 24px 0', gap: 10,
+        display: 'grid', gridTemplateColumns: '1fr 1fr 1fr',
         opacity: mounted ? 1 : 0,
         transform: mounted ? 'translateY(0)' : 'translateY(15px)',
         transition: transition(0.1),
         position: 'relative', zIndex: 1,
       }}>
-        {hasWorkouts ? (
-          <>
-            <StatCard label="This week" value={String(thisWeek.length)} unit={thisWeek.length === 1 ? 'workout' : 'workouts'} />
-            <StatCard label="Volume" value={volumeDisplay} unit="kg lifted" />
-            <StatCard label="Streak" value={String(streak)} unit="days" icon={<FlameIcon />} accent />
-          </>
-        ) : (
-          <>
-            <div style={{
-              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
-              borderRadius: 14, padding: '16px 18px',
-            }}>
-              <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 500 }}>This week</p>
-              <p style={{ margin: '6px 0 0', fontSize: 13, color: 'rgba(255,255,255,0.25)' }}>No workouts yet</p>
-            </div>
-            <div
-              onClick={() => setShowGoalPicker(true)}
-              style={{
-                background: 'rgba(249,115,22,0.06)', border: '1px solid rgba(249,115,22,0.12)',
-                borderRadius: 14, padding: '16px 18px', cursor: 'pointer',
-              }}>
-              <p style={{ margin: 0, fontSize: 11, color: 'rgba(249,115,22,0.6)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 500 }}>Weekly goal</p>
-              {weeklyGoal ? (
-                <>
-                  <p style={{ margin: '6px 0 2px', fontSize: 18, fontWeight: 700, color: '#F97316', fontFamily: "'Space Mono', monospace" }}>
-                    {thisWeek.length}/{weeklyGoal}
-                  </p>
-                  <div style={{ height: 3, borderRadius: 2, background: 'rgba(249,115,22,0.2)', marginTop: 4 }}>
-                    <div style={{
-                      height: '100%', borderRadius: 2, background: '#F97316',
-                      width: `${Math.min(100, (thisWeek.length / weeklyGoal) * 100)}%`,
-                      transition: 'width 0.4s ease',
-                    }} />
-                  </div>
-                </>
-              ) : (
-                <p style={{ margin: '6px 0 0', fontSize: 13, color: '#F97316' }}>Set a target →</p>
-              )}
-            </div>
-          </>
-        )}
+        <StatCard label="This week" value={String(thisWeek.length)} unit={thisWeek.length === 1 ? 'workout' : 'workouts'} />
+        <StatCard label="Volume" value={volumeDisplay} unit="kg lifted" />
+        <StatCard label="Streak" value={String(streak)} unit="days" icon={<FlameIcon />} accent />
+      </div>
+
+      {/* Weekly goal card */}
+      <div style={{
+        padding: '10px 24px 0',
+        opacity: mounted ? 1 : 0,
+        transform: mounted ? 'translateY(0)' : 'translateY(15px)',
+        transition: transition(0.15),
+        position: 'relative', zIndex: 1,
+      }}>
+        <div
+          onClick={() => setShowGoalPicker(true)}
+          style={{
+            background: 'rgba(249,115,22,0.06)', border: '1px solid rgba(249,115,22,0.12)',
+            borderRadius: 14, padding: '14px 18px', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
+          }}>
+          <div style={{ flex: 1 }}>
+            <p style={{ margin: 0, fontSize: 11, color: 'rgba(249,115,22,0.6)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 500 }}>Weekly goal</p>
+            {weeklyGoal ? (
+              <>
+                <p style={{ margin: '4px 0 6px', fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>
+                  {thisWeek.length} of {weeklyGoal} workouts this week
+                </p>
+                <div style={{ height: 4, borderRadius: 2, background: 'rgba(249,115,22,0.2)' }}>
+                  <div style={{
+                    height: '100%', borderRadius: 2, background: '#F97316',
+                    width: `${Math.min(100, (thisWeek.length / weeklyGoal) * 100)}%`,
+                    transition: 'width 0.4s ease',
+                  }} />
+                </div>
+              </>
+            ) : (
+              <p style={{ margin: '4px 0 0', fontSize: 13, color: '#F97316' }}>Set a target →</p>
+            )}
+          </div>
+          {weeklyGoal && (
+            <p style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#F97316', fontFamily: "'Space Mono', monospace", flexShrink: 0 }}>
+              {thisWeek.length}/{weeklyGoal}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* CTA Button */}
@@ -298,8 +302,42 @@ export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWork
         transition: transition(0.3),
         position: 'relative', zIndex: 1,
       }}>
-        {hasWorkouts ? (
-          <>
+        {/* Quick Start — always visible */}
+        <h2 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.85)' }}>Quick Start</h2>
+        <p style={{ margin: '0 0 16px', fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>Pick a template or start from scratch</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {TEMPLATES.map((t, i) => (
+            <div
+              key={i}
+              onMouseEnter={() => setHoveredTemplate(i)}
+              onMouseLeave={() => setHoveredTemplate(null)}
+              onClick={() => { onStartTemplate(t.name, t.exercises); onNavigate('workout') }}
+              style={{
+                background: hoveredTemplate === i ? 'rgba(249,115,22,0.06)' : 'rgba(255,255,255,0.03)',
+                border: hoveredTemplate === i ? '1px solid rgba(249,115,22,0.15)' : '1px solid rgba(255,255,255,0.06)',
+                borderRadius: 14, padding: '16px 18px', cursor: 'pointer',
+                transition: 'all 0.25s ease', display: 'flex', alignItems: 'center', gap: 14,
+              }}
+            >
+              <div style={{
+                width: 44, height: 44, borderRadius: 12,
+                background: 'rgba(249,115,22,0.1)', display: 'flex',
+                alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0,
+              }}>{t.icon}</div>
+              <div style={{ flex: 1 }}>
+                <p style={{ margin: 0, fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.9)' }}>{t.name}</p>
+                <p style={{ margin: '3px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{t.exercises.map(e => e.exerciseName).join(' · ')}</p>
+              </div>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ opacity: 0.3, flexShrink: 0 }}>
+                <path d="M6 3l5 5-5 5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+          ))}
+        </div>
+
+        {/* Recent Workouts — only when they exist */}
+        {hasWorkouts && (
+          <div style={{ marginTop: 28 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.85)' }}>Recent Workouts</h2>
               {workouts.length > 3 && (
@@ -313,55 +351,7 @@ export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWork
                 <WorkoutCard key={w.id} workout={w} onDelete={() => onDeleteWorkout(w.id)} />
               ))}
             </div>
-          </>
-        ) : (
-          <>
-            <h2 style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.85)' }}>Quick Start</h2>
-            <p style={{ margin: '0 0 16px', fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>Pick a template or start from scratch</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {TEMPLATES.map((t, i) => (
-                <div
-                  key={i}
-                  onMouseEnter={() => setHoveredTemplate(i)}
-                  onMouseLeave={() => setHoveredTemplate(null)}
-                  onClick={() => { onStartTemplate(t.name, t.exercises); onNavigate('workout') }}
-                  style={{
-                    background: hoveredTemplate === i ? 'rgba(249,115,22,0.06)' : 'rgba(255,255,255,0.03)',
-                    border: hoveredTemplate === i ? '1px solid rgba(249,115,22,0.15)' : '1px solid rgba(255,255,255,0.06)',
-                    borderRadius: 14, padding: '16px 18px', cursor: 'pointer',
-                    transition: 'all 0.25s ease', display: 'flex', alignItems: 'center', gap: 14,
-                  }}
-                >
-                  <div style={{
-                    width: 44, height: 44, borderRadius: 12,
-                    background: 'rgba(249,115,22,0.1)', display: 'flex',
-                    alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0,
-                  }}>{t.icon}</div>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ margin: 0, fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.9)' }}>{t.name}</p>
-                    <p style={{ margin: '3px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{t.exercises.map(e => e.exerciseName).join(' · ')}</p>
-                  </div>
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ opacity: 0.3, flexShrink: 0 }}>
-                    <path d="M6 3l5 5-5 5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-              ))}
-            </div>
-
-            <div style={{
-              marginTop: 20, padding: '16px 18px',
-              background: 'linear-gradient(135deg, rgba(249,115,22,0.08) 0%, rgba(249,115,22,0.03) 100%)',
-              border: '1px solid rgba(249,115,22,0.1)', borderRadius: 14, textAlign: 'center',
-            }}>
-              <p style={{ margin: 0, fontSize: 20 }}>🎯</p>
-              <p style={{ margin: '8px 0 0', fontSize: 14, fontWeight: 500, color: 'rgba(255,255,255,0.7)' }}>
-                Your first workout is the hardest
-              </p>
-              <p style={{ margin: '4px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>
-                After that, it's just showing up
-              </p>
-            </div>
-          </>
+          </div>
         )}
       </div>
 
