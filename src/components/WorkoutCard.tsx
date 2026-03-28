@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { WorkoutSession } from '../types'
 import { totalVolume, formatDuration } from '../utils/calculations'
 import { categoryColors } from '../data/exercises'
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export default function WorkoutCard({ workout, onDelete, onFavorite }: Props) {
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const volume = totalVolume(workout)
   const completedSets = workout.exercises.reduce((n, e) => n + e.sets.filter(s => s.completed).length, 0)
   const date = new Date(workout.date)
@@ -30,12 +32,19 @@ export default function WorkoutCard({ workout, onDelete, onFavorite }: Props) {
             </button>
           )}
           {onDelete && (
-            <button onClick={onDelete} className="text-gray-600 hover:text-red-400 transition-colors">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                <polyline points="3 6 5 6 21 6" />
-                <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-              </svg>
-            </button>
+            confirmDelete ? (
+              <>
+                <button onClick={onDelete} className="text-xs text-red-400 hover:text-red-300 transition-colors font-medium">Yes</button>
+                <button onClick={() => setConfirmDelete(false)} className="text-xs text-gray-500 hover:text-gray-300 transition-colors">No</button>
+              </>
+            ) : (
+              <button onClick={() => setConfirmDelete(true)} className="text-gray-600 hover:text-red-400 transition-colors">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                  <polyline points="3 6 5 6 21 6" />
+                  <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+                </svg>
+              </button>
+            )
           )}
         </div>
       </div>
