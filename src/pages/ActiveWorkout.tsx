@@ -21,7 +21,7 @@ interface Props {
   onRemoveSet: (entryId: string, setId: string) => void
   onUpdateSet: (entryId: string, setId: string, patch: Partial<WorkoutSet>) => void
   onUpdateName: (name: string) => void
-  onFinish: () => void
+  onFinish: (notes?: string) => void
   onDiscard: () => void
   getLastSession: (exerciseId: string, excludeId?: string) => { exercises: WorkoutExercise[] } | null
 }
@@ -43,6 +43,8 @@ export default function ActiveWorkout({
   const [showPicker, setShowPicker] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [editingName, setEditingName] = useState(false)
+  const [showFinishModal, setShowFinishModal] = useState(false)
+  const [notes, setNotes] = useState('')
 
   useEffect(() => {
     if (!active) return
@@ -225,13 +227,77 @@ export default function ActiveWorkout({
 
         {/* Finish workout */}
         <button
-          onClick={onFinish}
+          onClick={() => setShowFinishModal(true)}
           disabled={active.exercises.length === 0}
           className="w-full py-4 rounded-xl bg-orange-500 hover:bg-orange-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-lg transition-colors"
         >
           Finish Workout
         </button>
       </div>
+
+      {/* Finish modal */}
+      {showFinishModal && (
+        <div
+          onClick={() => setShowFinishModal(false)}
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+            backdropFilter: 'blur(4px)', zIndex: 200,
+            display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+          }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              background: '#1a1d24', borderRadius: '20px 20px 0 0',
+              border: '1px solid rgba(255,255,255,0.08)',
+              padding: '24px 24px 40px', width: '100%', maxWidth: 512,
+            }}
+          >
+            <p style={{ margin: '0 0 6px', fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.9)' }}>
+              Finish Workout
+            </p>
+            <p style={{ margin: '0 0 16px', fontSize: 13, color: 'rgba(255,255,255,0.4)' }}>
+              Add a note about how it went (optional)
+            </p>
+            <textarea
+              autoFocus
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="Felt strong today, deload week..."
+              rows={3}
+              style={{
+                width: '100%', background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12,
+                color: 'rgba(255,255,255,0.85)', fontSize: 14, padding: '12px 14px',
+                fontFamily: 'inherit', resize: 'none', outline: 'none',
+                boxSizing: 'border-box',
+              }}
+            />
+            <button
+              onClick={() => { onFinish(notes); setShowFinishModal(false) }}
+              style={{
+                marginTop: 12, width: '100%', padding: '14px',
+                background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
+                border: 'none', borderRadius: 12, color: 'white',
+                fontSize: 15, fontWeight: 600, fontFamily: 'inherit', cursor: 'pointer',
+              }}
+            >
+              Save Workout
+            </button>
+            <button
+              onClick={() => { onFinish(); setShowFinishModal(false) }}
+              style={{
+                marginTop: 10, width: '100%', padding: '12px',
+                background: 'none', border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 12, color: 'rgba(255,255,255,0.35)',
+                fontSize: 13, fontFamily: 'inherit', cursor: 'pointer',
+              }}
+            >
+              Skip
+            </button>
+          </div>
+        </div>
+      )}
     </>
   )
 }

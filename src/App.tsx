@@ -19,8 +19,8 @@ function AppContent() {
   const activeHook = useActiveWorkout()
   const settingsHook = useUserSettings()
 
-  const handleWorkoutFinish = () => {
-    const session = activeHook.finishWorkout()
+  const handleWorkoutFinish = (notes?: string) => {
+    const session = activeHook.finishWorkout(notes)
     if (session) workoutsHook.addWorkout(session)
     setPage('dashboard')
   }

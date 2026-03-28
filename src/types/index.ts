@@ -51,6 +51,7 @@ export interface WorkoutSession {
   exercises: WorkoutExercise[]
   durationSeconds: number
   favorited?: boolean
+  notes?: string
 }
 
 export interface PersonalRecord {

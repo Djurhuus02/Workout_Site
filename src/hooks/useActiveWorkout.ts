@@ -153,7 +153,7 @@ export function useActiveWorkout() {
     setActive(prev => (prev ? { ...prev, name } : prev))
   }, [])
 
-  const finishWorkout = useCallback((): WorkoutSession | null => {
+  const finishWorkout = useCallback((notes?: string): WorkoutSession | null => {
     if (!active) return null
 
     const session: WorkoutSession = {
@@ -162,6 +162,7 @@ export function useActiveWorkout() {
       name: active.name,
       exercises: active.exercises,
       durationSeconds: Math.round((Date.now() - active.startTime) / 1000),
+      notes: notes?.trim() || undefined,
     }
 
     setActive(null)

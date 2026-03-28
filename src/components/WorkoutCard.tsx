@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
+import html2canvas from 'html2canvas'
 import { WorkoutSession } from '../types'
 import { totalVolume, formatDuration } from '../utils/calculations'
 import { categoryColors } from '../data/exercises'
+import ShareCard from './ShareCard'
 
 interface Props {
   workout: WorkoutSession
@@ -11,6 +13,38 @@ interface Props {
 
 export default function WorkoutCard({ workout, onDelete, onFavorite }: Props) {
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [sharing, setSharing] = useState(false)
+  const shareRef = useRef<HTMLDivElement>(null)
+
+  const handleShare = async () => {
+    setSharing(true)
+    await new Promise(r => setTimeout(r, 100)) // let the card render
+    if (!shareRef.current) { setSharing(false); return }
+
+    const canvas = await html2canvas(shareRef.current, {
+      backgroundColor: '#0F1115',
+      scale: 2,
+      useCORS: true,
+      logging: false,
+    })
+
+    canvas.toBlob(async blob => {
+      if (!blob) { setSharing(false); return }
+      const file = new File([blob], `${workout.name}.png`, { type: 'image/png' })
+
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({ files: [file], title: workout.name })
+      } else {
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `${workout.name}.png`
+        a.click()
+        URL.revokeObjectURL(url)
+      }
+      setSharing(false)
+    }, 'image/png')
+  }
   const volume = totalVolume(workout)
   const completedSets = workout.exercises.reduce((n, e) => n + e.sets.filter(s => s.completed).length, 0)
   const date = new Date(workout.date)
@@ -24,6 +58,16 @@ export default function WorkoutCard({ workout, onDelete, onFavorite }: Props) {
           <p className="text-xs text-gray-500 mt-0.5">{dateStr}</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
+          <button onClick={handleShare} disabled={sharing} className="text-gray-600 hover:text-orange-400 transition-colors disabled:opacity-40" title="Share workout">
+            {sharing ? (
+              <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeDasharray="40" strokeDashoffset="10" /></svg>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                <circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" />
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" /><line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+              </svg>
+            )}
+          </button>
           {onFavorite && (
             <button onClick={onFavorite} className="transition-colors" title={workout.favorited ? 'Remove from templates' : 'Save as template'}>
               <svg viewBox="0 0 24 24" fill={workout.favorited ? '#F97316' : 'none'} stroke={workout.favorited ? '#F97316' : 'currentColor'} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={`w-4 h-4 ${workout.favorited ? '' : 'text-gray-600 hover:text-orange-400'}`}>
@@ -88,9 +132,15 @@ export default function WorkoutCard({ workout, onDelete, onFavorite }: Props) {
         })}
       </div>
 
-      {/* Category tags */}
-      <div className="flex flex-wrap gap-1 mt-3">
-        </div>
+      {/* Notes */}
+      {workout.notes && (
+        <p className="text-xs text-gray-500 italic mt-3 border-t border-gray-800 pt-3">"{workout.notes}"</p>
+      )}
+
+      {/* Hidden share card for html2canvas */}
+      <div style={{ position: 'fixed', left: -9999, top: 0, pointerEvents: 'none', zIndex: -1 }}>
+        <ShareCard ref={shareRef} workout={workout} />
+      </div>
     </div>
   )
 }
