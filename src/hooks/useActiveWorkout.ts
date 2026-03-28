@@ -37,7 +37,9 @@ export function useActiveWorkout() {
 
   const startWorkout = useCallback((name?: string) => {
     const now = new Date()
-    const defaultName = `Workout – ${now.toLocaleDateString('en-GB', {
+    const h = now.getHours()
+    const timeOfDay = h < 12 ? 'Morning' : h < 14 ? 'Midday' : h < 18 ? 'Afternoon' : 'Evening'
+    const defaultName = `${timeOfDay} Session – ${now.toLocaleDateString('en-GB', {
       weekday: 'long',
       day: 'numeric',
       month: 'short',
