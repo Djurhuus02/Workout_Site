@@ -5,9 +5,10 @@ import { categoryColors } from '../data/exercises'
 interface Props {
   workout: WorkoutSession
   onDelete?: () => void
+  onFavorite?: () => void
 }
 
-export default function WorkoutCard({ workout, onDelete }: Props) {
+export default function WorkoutCard({ workout, onDelete, onFavorite }: Props) {
   const volume = totalVolume(workout)
   const completedSets = workout.exercises.reduce((n, e) => n + e.sets.filter(s => s.completed).length, 0)
   const date = new Date(workout.date)
@@ -20,17 +21,23 @@ export default function WorkoutCard({ workout, onDelete }: Props) {
           <h3 className="font-semibold text-white">{workout.name}</h3>
           <p className="text-xs text-gray-500 mt-0.5">{dateStr}</p>
         </div>
-        {onDelete && (
-          <button
-            onClick={onDelete}
-            className="text-gray-600 hover:text-red-400 transition-colors flex-shrink-0"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-              <polyline points="3 6 5 6 21 6" />
-              <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-            </svg>
-          </button>
-        )}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {onFavorite && (
+            <button onClick={onFavorite} className="transition-colors" title={workout.favorited ? 'Remove from templates' : 'Save as template'}>
+              <svg viewBox="0 0 24 24" fill={workout.favorited ? '#F97316' : 'none'} stroke={workout.favorited ? '#F97316' : 'currentColor'} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className={`w-4 h-4 ${workout.favorited ? '' : 'text-gray-600 hover:text-orange-400'}`}>
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+              </svg>
+            </button>
+          )}
+          {onDelete && (
+            <button onClick={onDelete} className="text-gray-600 hover:text-red-400 transition-colors">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                <polyline points="3 6 5 6 21 6" />
+                <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Stats row */}

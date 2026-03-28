@@ -33,14 +33,14 @@ export function useWorkouts() {
 
       const { data, error } = await supabase
         .from('workouts')
-        .select('*')
+        .select('id, favorited, data')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
 
       if (error) {
         console.error('Error fetching workouts:', error)
       } else if (data) {
-        setWorkouts(data.map(row => row.data as WorkoutSession))
+        setWorkouts(data.map(row => ({ ...(row.data as WorkoutSession), id: row.id, favorited: row.favorited ?? false })))
       }
 
       setLoading(false)
@@ -88,6 +88,27 @@ export function useWorkouts() {
     }
   }, [user, workouts])
 
+  const toggleFavorite = useCallback(async (id: string) => {
+    if (!user) return
+
+    const workout = workouts.find(w => w.id === id)
+    if (!workout) return
+
+    const newValue = !workout.favorited
+    setWorkouts(prev => prev.map(w => w.id === id ? { ...w, favorited: newValue } : w))
+
+    const { error } = await supabase
+      .from('workouts')
+      .update({ favorited: newValue })
+      .eq('id', id)
+      .eq('user_id', user.id)
+
+    if (error) {
+      console.error('Error toggling favorite:', error)
+      setWorkouts(prev => prev.map(w => w.id === id ? { ...w, favorited: !newValue } : w))
+    }
+  }, [user, workouts])
+
   const getLastSession = useCallback((exerciseId: string, excludeWorkoutId?: string) => {
     return workouts.find(
       w =>
@@ -96,5 +117,5 @@ export function useWorkouts() {
     ) ?? null
   }, [workouts])
 
-  return { workouts, loading, addWorkout, deleteWorkout, getLastSession }
+  return { workouts, loading, addWorkout, deleteWorkout, toggleFavorite, getLastSession }
 }

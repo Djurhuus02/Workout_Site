@@ -4,9 +4,10 @@ import WorkoutCard from '../components/WorkoutCard'
 interface Props {
   workouts: WorkoutSession[]
   onDelete: (id: string) => void
+  onFavorite: (id: string) => void
 }
 
-export default function History({ workouts, onDelete }: Props) {
+export default function History({ workouts, onDelete, onFavorite }: Props) {
   if (workouts.length === 0) {
     return (
       <div className="px-4 pt-6 pb-6">
@@ -48,6 +49,7 @@ export default function History({ workouts, onDelete }: Props) {
                   key={w.id}
                   workout={w}
                   onDelete={() => onDelete(w.id)}
+                  onFavorite={() => onFavorite(w.id)}
                 />
               ))}
             </div>

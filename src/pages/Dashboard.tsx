@@ -83,11 +83,44 @@ function StatCard({ label, value, unit, icon, accent }: {
   )
 }
 
+function TemplateRow({ name, icon, subtitle, hovered, onMouseEnter, onMouseLeave, onClick }: {
+  name: string; icon: string; subtitle: string; hovered: boolean
+  onMouseEnter: () => void; onMouseLeave: () => void; onClick: () => void
+}) {
+  return (
+    <div
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      onClick={onClick}
+      style={{
+        background: hovered ? 'rgba(249,115,22,0.06)' : 'rgba(255,255,255,0.03)',
+        border: hovered ? '1px solid rgba(249,115,22,0.15)' : '1px solid rgba(255,255,255,0.06)',
+        borderRadius: 14, padding: '16px 18px', cursor: 'pointer',
+        transition: 'all 0.25s ease', display: 'flex', alignItems: 'center', gap: 14,
+      }}
+    >
+      <div style={{
+        width: 44, height: 44, borderRadius: 12,
+        background: 'rgba(249,115,22,0.1)', display: 'flex',
+        alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0,
+      }}>{icon}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <p style={{ margin: 0, fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.9)' }}>{name}</p>
+        <p style={{ margin: '3px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{subtitle}</p>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ opacity: 0.3, flexShrink: 0 }}>
+        <path d="M6 3l5 5-5 5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </div>
+  )
+}
+
 interface Props {
   workouts: WorkoutSession[]
   isActive: boolean
   onNavigate: (page: Page) => void
   onDeleteWorkout: (id: string) => void
+  onFavoriteWorkout: (id: string) => void
   onStartTemplate: (name: string, exercises: { exerciseId: string; exerciseName: string }[]) => void
   weeklyGoal: number | null
   onSaveWeeklyGoal: (goal: number | null) => void
@@ -95,7 +128,7 @@ interface Props {
   user?: User | null
 }
 
-export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWorkout, onStartTemplate, weeklyGoal, onSaveWeeklyGoal, signOut, user }: Props) {
+export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWorkout, onFavoriteWorkout, onStartTemplate, weeklyGoal, onSaveWeeklyGoal, signOut, user }: Props) {
   const [mounted, setMounted] = useState(false)
   const [hoveredTemplate, setHoveredTemplate] = useState<number | null>(null)
   const [showGoalPicker, setShowGoalPicker] = useState(false)
@@ -307,31 +340,31 @@ export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWork
         <p style={{ margin: '0 0 16px', fontSize: 13, color: 'rgba(255,255,255,0.3)' }}>Pick a template or start from scratch</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {TEMPLATES.map((t, i) => (
-            <div
+            <TemplateRow
               key={i}
+              name={t.name}
+              icon={t.icon}
+              subtitle={t.exercises.map(e => e.exerciseName).join(' · ')}
+              hovered={hoveredTemplate === i}
               onMouseEnter={() => setHoveredTemplate(i)}
               onMouseLeave={() => setHoveredTemplate(null)}
               onClick={() => { onStartTemplate(t.name, t.exercises); onNavigate('workout') }}
-              style={{
-                background: hoveredTemplate === i ? 'rgba(249,115,22,0.06)' : 'rgba(255,255,255,0.03)',
-                border: hoveredTemplate === i ? '1px solid rgba(249,115,22,0.15)' : '1px solid rgba(255,255,255,0.06)',
-                borderRadius: 14, padding: '16px 18px', cursor: 'pointer',
-                transition: 'all 0.25s ease', display: 'flex', alignItems: 'center', gap: 14,
+            />
+          ))}
+          {workouts.filter(w => w.favorited).map((w, i) => (
+            <TemplateRow
+              key={w.id}
+              name={w.name}
+              icon="⭐"
+              subtitle={w.exercises.map(e => e.exerciseName).join(' · ')}
+              hovered={hoveredTemplate === 100 + i}
+              onMouseEnter={() => setHoveredTemplate(100 + i)}
+              onMouseLeave={() => setHoveredTemplate(null)}
+              onClick={() => {
+                onStartTemplate(w.name, w.exercises.map(e => ({ exerciseId: e.exerciseId, exerciseName: e.exerciseName })))
+                onNavigate('workout')
               }}
-            >
-              <div style={{
-                width: 44, height: 44, borderRadius: 12,
-                background: 'rgba(249,115,22,0.1)', display: 'flex',
-                alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0,
-              }}>{t.icon}</div>
-              <div style={{ flex: 1 }}>
-                <p style={{ margin: 0, fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.9)' }}>{t.name}</p>
-                <p style={{ margin: '3px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{t.exercises.map(e => e.exerciseName).join(' · ')}</p>
-              </div>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ opacity: 0.3, flexShrink: 0 }}>
-                <path d="M6 3l5 5-5 5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </div>
+            />
           ))}
         </div>
 
@@ -348,7 +381,7 @@ export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWork
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {workouts.slice(0, 3).map(w => (
-                <WorkoutCard key={w.id} workout={w} onDelete={() => onDeleteWorkout(w.id)} />
+                <WorkoutCard key={w.id} workout={w} onDelete={() => onDeleteWorkout(w.id)} onFavorite={() => onFavoriteWorkout(w.id)} />
               ))}
             </div>
           </div>

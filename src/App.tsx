@@ -53,6 +53,7 @@ function AppContent() {
             isActive={activeHook.isActive}
             onNavigate={setPage}
             onDeleteWorkout={workoutsHook.deleteWorkout}
+            onFavoriteWorkout={workoutsHook.toggleFavorite}
             onStartTemplate={activeHook.startWorkoutFromTemplate}
             weeklyGoal={settingsHook.weeklyGoal}
             onSaveWeeklyGoal={settingsHook.saveWeeklyGoal}
@@ -80,6 +81,7 @@ function AppContent() {
           <History
             workouts={workoutsHook.workouts}
             onDelete={workoutsHook.deleteWorkout}
+            onFavorite={workoutsHook.toggleFavorite}
           />
         )}
         {page === 'exercises' && <Exercises />}
