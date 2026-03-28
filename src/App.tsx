@@ -25,7 +25,7 @@ function AppContent() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a] text-white flex items-center justify-center">
+      <div className="min-h-screen bg-[#0F1115] text-white flex items-center justify-center">
         <div className="text-gray-400">Loading...</div>
       </div>
     )
@@ -36,7 +36,7 @@ function AppContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
+    <div className="min-h-screen bg-[#0F1115] text-white">
       <div
         className="max-w-lg mx-auto overflow-y-auto"
         style={{
@@ -45,20 +45,14 @@ function AppContent() {
           minHeight: '100dvh',
         }}
       >
-        <div className="flex justify-end px-4 pt-2">
-          <button
-            onClick={signOut}
-            className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
-          >
-            Sign out
-          </button>
-        </div>
         {page === 'dashboard' && (
           <Dashboard
             workouts={workoutsHook.workouts}
             isActive={activeHook.isActive}
             onNavigate={setPage}
             onDeleteWorkout={workoutsHook.deleteWorkout}
+            signOut={signOut}
+            user={user}
           />
         )}
         {page === 'workout' && (
