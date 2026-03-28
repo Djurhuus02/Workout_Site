@@ -51,6 +51,7 @@ function AppContent() {
             isActive={activeHook.isActive}
             onNavigate={setPage}
             onDeleteWorkout={workoutsHook.deleteWorkout}
+            onStartTemplate={activeHook.startWorkoutFromTemplate}
             signOut={signOut}
             user={user}
           />

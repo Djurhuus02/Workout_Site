@@ -51,6 +51,25 @@ export function useActiveWorkout() {
     })
   }, [])
 
+  const startWorkoutFromTemplate = useCallback((
+    name: string,
+    exercises: { exerciseId: string; exerciseName: string }[]
+  ) => {
+    const entries: WorkoutExercise[] = exercises.map(ex => ({
+      id: genId(),
+      exerciseId: ex.exerciseId,
+      exerciseName: ex.exerciseName,
+      sets: [{ id: genId(), weight: 0, reps: 0, completed: false }],
+    }))
+
+    setActive({
+      id: genId(),
+      name,
+      startTime: Date.now(),
+      exercises: entries,
+    })
+  }, [])
+
   const addExercise = useCallback((exerciseId: string, exerciseName: string) => {
     const defaultSet: WorkoutSet = {
       id: genId(),
@@ -157,6 +176,7 @@ export function useActiveWorkout() {
     active,
     isActive: active !== null,
     startWorkout,
+    startWorkoutFromTemplate,
     addExercise,
     removeExercise,
     addSet,

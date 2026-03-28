@@ -5,9 +5,38 @@ import WorkoutCard from '../components/WorkoutCard'
 import { totalVolume } from '../utils/calculations'
 
 const TEMPLATES = [
-  { name: 'Push Day', icon: '💪', exercises: ['Bench Press', 'Overhead Press', 'Tricep Dips'] },
-  { name: 'Pull Day', icon: '🏋️', exercises: ['Deadlift', 'Barbell Row', 'Bicep Curls'] },
-  { name: 'Leg Day', icon: '🦵', exercises: ['Squat', 'Lunges', 'Leg Press'] },
+  {
+    name: 'Push Day', icon: '💪',
+    exercises: [
+      { exerciseId: 'bench_press', exerciseName: 'Bench Press' },
+      { exerciseId: 'incline_db_bench_press', exerciseName: 'Incline Dumbbell Bench Press' },
+      { exerciseId: 'barbell_ohp', exerciseName: 'Overhead Press' },
+      { exerciseId: 'lateral_raise', exerciseName: 'Lateral Raise' },
+      { exerciseId: 'tricep_pushdown_rope', exerciseName: 'Tricep Pushdown (Rope)' },
+    ],
+  },
+  {
+    name: 'Pull Day', icon: '🏋️',
+    exercises: [
+      { exerciseId: 'barbell_row', exerciseName: 'Barbell Row' },
+      { exerciseId: 'lat_pulldown', exerciseName: 'Lat Pulldown' },
+      { exerciseId: 'cable_row', exerciseName: 'Seated Cable Row' },
+      { exerciseId: 'face_pull', exerciseName: 'Face Pull' },
+      { exerciseId: 'barbell_curl', exerciseName: 'Barbell Curl' },
+      { exerciseId: 'hammer_curl', exerciseName: 'Hammer Curl' },
+    ],
+  },
+  {
+    name: 'Leg Day', icon: '🦵',
+    exercises: [
+      { exerciseId: 'back_squat', exerciseName: 'Back Squat' },
+      { exerciseId: 'leg_press', exerciseName: 'Leg Press' },
+      { exerciseId: 'romanian_deadlift', exerciseName: 'Romanian Deadlift' },
+      { exerciseId: 'leg_curl_lying', exerciseName: 'Leg Curl (Lying)' },
+      { exerciseId: 'leg_extension', exerciseName: 'Leg Extension' },
+      { exerciseId: 'calf_raise_standing', exerciseName: 'Standing Calf Raise' },
+    ],
+  },
 ]
 
 const DumbbellIcon = ({ size = 24, color = 'currentColor' }: { size?: number; color?: string }) => (
@@ -59,11 +88,12 @@ interface Props {
   isActive: boolean
   onNavigate: (page: Page) => void
   onDeleteWorkout: (id: string) => void
+  onStartTemplate: (name: string, exercises: { exerciseId: string; exerciseName: string }[]) => void
   signOut: () => void
   user?: User | null
 }
 
-export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWorkout, signOut, user }: Props) {
+export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWorkout, onStartTemplate, signOut, user }: Props) {
   const [mounted, setMounted] = useState(false)
   const [hoveredTemplate, setHoveredTemplate] = useState<number | null>(null)
 
@@ -269,7 +299,7 @@ export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWork
                   key={i}
                   onMouseEnter={() => setHoveredTemplate(i)}
                   onMouseLeave={() => setHoveredTemplate(null)}
-                  onClick={() => onNavigate('workout')}
+                  onClick={() => { onStartTemplate(t.name, t.exercises); onNavigate('workout') }}
                   style={{
                     background: hoveredTemplate === i ? 'rgba(249,115,22,0.06)' : 'rgba(255,255,255,0.03)',
                     border: hoveredTemplate === i ? '1px solid rgba(249,115,22,0.15)' : '1px solid rgba(255,255,255,0.06)',
@@ -284,7 +314,7 @@ export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWork
                   }}>{t.icon}</div>
                   <div style={{ flex: 1 }}>
                     <p style={{ margin: 0, fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.9)' }}>{t.name}</p>
-                    <p style={{ margin: '3px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{t.exercises.join(' · ')}</p>
+                    <p style={{ margin: '3px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>{t.exercises.map(e => e.exerciseName).join(' · ')}</p>
                   </div>
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ opacity: 0.3, flexShrink: 0 }}>
                     <path d="M6 3l5 5-5 5" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
