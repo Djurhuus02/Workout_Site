@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Page } from './types'
 import { useWorkouts } from './hooks/useWorkouts'
 import { useActiveWorkout } from './hooks/useActiveWorkout'
@@ -11,13 +11,26 @@ import History from './pages/History'
 import Exercises from './pages/Exercises'
 import Progress from './pages/Progress'
 import Login from './pages/Login'
+import Settings from './pages/Settings'
 
 function AppContent() {
   const [page, setPage] = useState<Page>('dashboard')
-  const { user, loading: authLoading, signOut } = useAuth()
+  const [theme, setTheme] = useState<'dark' | 'light'>(() =>
+    (localStorage.getItem('theme') as 'dark' | 'light') ?? 'dark'
+  )
+  const { user, loading: authLoading } = useAuth()
   const workoutsHook = useWorkouts()
   const activeHook = useActiveWorkout()
   const settingsHook = useUserSettings()
+
+  useEffect(() => {
+    localStorage.setItem('theme', theme)
+    if (theme === 'light') {
+      document.documentElement.classList.add('light-mode')
+    } else {
+      document.documentElement.classList.remove('light-mode')
+    }
+  }, [theme])
 
   const handleWorkoutFinish = (notes?: string) => {
     const session = activeHook.finishWorkout(notes)
@@ -57,7 +70,6 @@ function AppContent() {
             onStartTemplate={activeHook.startWorkoutFromTemplate}
             weeklyGoal={settingsHook.weeklyGoal}
             onSaveWeeklyGoal={settingsHook.saveWeeklyGoal}
-            signOut={signOut}
             user={user}
           />
         )}
@@ -87,6 +99,9 @@ function AppContent() {
         {page === 'exercises' && <Exercises />}
         {page === 'progress' && (
           <Progress workouts={workoutsHook.workouts} />
+        )}
+        {page === 'settings' && (
+          <Settings onNavigate={setPage} theme={theme} onThemeChange={setTheme} />
         )}
       </div>
       <Navigation current={page} onChange={setPage} hasActive={activeHook.isActive} />

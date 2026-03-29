@@ -63,4 +63,4 @@ export interface PersonalRecord {
   date: string
 }
 
-export type Page = 'dashboard' | 'workout' | 'history' | 'exercises' | 'progress'
+export type Page = 'dashboard' | 'workout' | 'history' | 'exercises' | 'progress' | 'settings'

@@ -49,11 +49,6 @@ const DumbbellIcon = ({ size = 24, color = 'currentColor' }: { size?: number; co
   </svg>
 )
 
-const FlameIcon = () => (
-  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-    <path d="M8 1C8 1 3 6 3 9.5C3 12.5 5.2 15 8 15C10.8 15 13 12.5 13 9.5C13 6 8 1 8 1ZM8 13C6.3 13 5 11.7 5 10C5 8.3 8 4 8 4C8 4 11 8.3 11 10C11 11.7 9.7 13 8 13Z" fill="#F97316" />
-  </svg>
-)
 
 function StatCard({ label, value, unit, icon, accent }: {
   label: string; value: string; unit: string; icon?: React.ReactNode; accent?: boolean
@@ -124,11 +119,10 @@ interface Props {
   onStartTemplate: (name: string, exercises: { exerciseId: string; exerciseName: string }[]) => void
   weeklyGoal: number | null
   onSaveWeeklyGoal: (goal: number | null) => void
-  signOut: () => void
   user?: User | null
 }
 
-export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWorkout, onFavoriteWorkout, onStartTemplate, weeklyGoal, onSaveWeeklyGoal, signOut, user }: Props) {
+export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWorkout, onFavoriteWorkout, onStartTemplate, weeklyGoal, onSaveWeeklyGoal, user }: Props) {
   const [mounted, setMounted] = useState(false)
   const [hoveredTemplate, setHoveredTemplate] = useState<number | null>(null)
   const [showGoalPicker, setShowGoalPicker] = useState(false)
@@ -140,29 +134,24 @@ export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWork
   const today = new Date()
   const weekStart = new Date(today)
   weekStart.setDate(today.getDate() - today.getDay())
+  weekStart.setHours(0, 0, 0, 0)
 
   const thisWeek = workouts.filter(w => new Date(w.date) >= weekStart)
   const weekVolume = thisWeek.reduce((sum, w) => sum + totalVolume(w), 0)
 
-  const streak = (() => {
-    if (workouts.length === 0) return 0
-    const uniqueDays = [...new Set(workouts.map(w => {
-      const d = new Date(w.date)
-      d.setHours(0, 0, 0, 0)
-      return d.getTime()
-    }))].sort((a, b) => b - a)
-    let count = 0
-    const check = new Date()
-    check.setHours(0, 0, 0, 0)
-    for (const dayTs of uniqueDays) {
-      if (dayTs === check.getTime()) {
-        count++
-        check.setDate(check.getDate() - 1)
-      } else {
-        break
-      }
-    }
-    return count
+  const avgSessionDisplay = (() => {
+    if (workouts.length === 0) return '—'
+    const avg = workouts.reduce((sum, w) => sum + w.durationSeconds, 0) / workouts.length
+    if (avg < 60) return `${Math.round(avg)}s`
+    const mins = Math.round(avg / 60)
+    if (mins < 60) return `${mins}`
+    return `${Math.floor(mins / 60)}h${mins % 60 > 0 ? `${mins % 60}` : ''}`
+  })()
+  const avgSessionUnit = (() => {
+    if (workouts.length === 0) return 'no sessions yet'
+    const avg = workouts.reduce((sum, w) => sum + w.durationSeconds, 0) / workouts.length
+    if (avg < 60) return 'sec avg'
+    return Math.round(avg / 60) < 60 ? 'min avg' : 'hr avg'
   })()
 
   const firstName = (user?.user_metadata?.full_name as string | undefined)?.split(' ')[0]
@@ -221,13 +210,18 @@ export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWork
           </div>
         </div>
         <button
-          onClick={signOut}
+          onClick={() => onNavigate('settings')}
           style={{
             background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)',
-            color: 'rgba(255,255,255,0.5)', borderRadius: 10, padding: '8px 14px',
-            fontSize: 13, fontFamily: 'inherit', cursor: 'pointer', marginTop: 4,
+            borderRadius: 10, width: 36, height: 36, display: 'flex',
+            alignItems: 'center', justifyContent: 'center', cursor: 'pointer', marginTop: 4,
           }}
-        >Sign out</button>
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+          </svg>
+        </button>
       </div>
 
       {/* Stats */}
@@ -239,9 +233,9 @@ export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWork
         transition: transition(0.1),
         position: 'relative', zIndex: 1,
       }}>
-        <StatCard label="This week" value={String(thisWeek.length)} unit={thisWeek.length === 1 ? 'workout' : 'workouts'} />
+        <StatCard label="Total" value={String(workouts.length)} unit={workouts.length === 1 ? 'workout' : 'workouts'} />
         <StatCard label="Volume" value={volumeDisplay} unit="kg lifted" />
-        <StatCard label="Streak" value={String(streak)} unit="days" icon={<FlameIcon />} accent />
+        <StatCard label="Avg time" value={avgSessionDisplay} unit={avgSessionUnit} />
       </div>
 
       {/* Weekly goal card */}
@@ -264,11 +258,16 @@ export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWork
             {weeklyGoal ? (
               <>
                 <p style={{ margin: '4px 0 6px', fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>
-                  {thisWeek.length} of {weeklyGoal} workouts this week
+                  {thisWeek.length > weeklyGoal
+                    ? `${thisWeek.length - weeklyGoal} extra this week — you're on fire! 🔥`
+                    : `${thisWeek.length} of ${weeklyGoal} workouts this week`}
                 </p>
                 <div style={{ height: 4, borderRadius: 2, background: 'rgba(249,115,22,0.2)' }}>
                   <div style={{
-                    height: '100%', borderRadius: 2, background: '#F97316',
+                    height: '100%', borderRadius: 2,
+                    background: thisWeek.length > weeklyGoal
+                      ? 'linear-gradient(90deg, #F97316, #facc15)'
+                      : '#F97316',
                     width: `${Math.min(100, (thisWeek.length / weeklyGoal) * 100)}%`,
                     transition: 'width 0.4s ease',
                   }} />
