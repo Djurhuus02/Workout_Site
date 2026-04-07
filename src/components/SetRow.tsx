@@ -6,13 +6,21 @@ interface Props {
   previous?: { weight: number; reps: number } | null
   onUpdate: (patch: Partial<WorkoutSet>) => void
   onDelete: () => void
+  isBodyweight?: boolean
+  bodyWeightKg?: number | null
 }
 
-export default function SetRow({ set, index, previous, onUpdate, onDelete }: Props) {
+export default function SetRow({ set, index, previous, onUpdate, onDelete, isBodyweight, bodyWeightKg }: Props) {
   const handleWeight = (delta: number) => {
     const next = Math.max(0, Math.round((set.weight + delta) * 4) / 4)
     onUpdate({ weight: next })
   }
+
+  const prevLabel = previous
+    ? isBodyweight
+      ? `BW${previous.weight > 0 ? `+${previous.weight}` : ''}×${previous.reps}`
+      : `${previous.weight}×${previous.reps}`
+    : '–'
 
   return (
     <div className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors
@@ -22,36 +30,66 @@ export default function SetRow({ set, index, previous, onUpdate, onDelete }: Pro
       <span className="w-5 text-center text-xs font-bold text-gray-500">{index + 1}</span>
 
       {/* Previous hint */}
-      <span className="w-16 text-center text-xs text-gray-600 truncate">
-        {previous ? `${previous.weight}×${previous.reps}` : '–'}
-      </span>
+      <span className="w-16 text-center text-xs text-gray-600 truncate">{prevLabel}</span>
 
-      {/* Weight */}
-      <div className="flex items-center gap-1 flex-1">
-        <button
-          onClick={() => handleWeight(-2.5)}
-          className="w-7 h-7 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 flex items-center justify-center text-lg leading-none"
-        >
-          −
-        </button>
-        <input
-          type="number"
-          inputMode="decimal"
-          min={0}
-          step={0.25}
-          value={set.weight || ''}
-          placeholder="0"
-          onChange={e => onUpdate({ weight: parseFloat(e.target.value) || 0 })}
-          className="w-16 text-center bg-gray-700 border border-gray-600 rounded px-1 py-1 text-white text-sm focus:outline-none focus:border-orange-500"
-        />
-        <button
-          onClick={() => handleWeight(2.5)}
-          className="w-7 h-7 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 flex items-center justify-center text-lg leading-none"
-        >
-          +
-        </button>
-        <span className="text-xs text-gray-500 ml-0.5">kg</span>
-      </div>
+      {isBodyweight ? (
+        /* ── Bodyweight mode ── */
+        <div className="flex items-center gap-1.5 flex-1">
+          <span className="px-2.5 py-1 rounded bg-gray-700 text-orange-400 text-xs font-bold tracking-wide">
+            BW{bodyWeightKg ? ` ${bodyWeightKg}kg` : ''}
+          </span>
+          <button
+            onClick={() => handleWeight(-2.5)}
+            className="w-7 h-7 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 flex items-center justify-center text-lg leading-none"
+          >
+            −
+          </button>
+          <input
+            type="number"
+            inputMode="decimal"
+            min={0}
+            step={0.25}
+            value={set.weight || ''}
+            placeholder="0"
+            onChange={e => onUpdate({ weight: parseFloat(e.target.value) || 0 })}
+            className="w-12 text-center bg-gray-700 border border-gray-600 rounded px-1 py-1 text-white text-sm focus:outline-none focus:border-orange-500"
+          />
+          <button
+            onClick={() => handleWeight(2.5)}
+            className="w-7 h-7 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 flex items-center justify-center text-lg leading-none"
+          >
+            +
+          </button>
+          <span className="text-xs text-gray-500">+kg</span>
+        </div>
+      ) : (
+        /* ── Weighted mode ── */
+        <div className="flex items-center gap-1 flex-1">
+          <button
+            onClick={() => handleWeight(-2.5)}
+            className="w-7 h-7 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 flex items-center justify-center text-lg leading-none"
+          >
+            −
+          </button>
+          <input
+            type="number"
+            inputMode="decimal"
+            min={0}
+            step={0.25}
+            value={set.weight || ''}
+            placeholder="0"
+            onChange={e => onUpdate({ weight: parseFloat(e.target.value) || 0 })}
+            className="w-16 text-center bg-gray-700 border border-gray-600 rounded px-1 py-1 text-white text-sm focus:outline-none focus:border-orange-500"
+          />
+          <button
+            onClick={() => handleWeight(2.5)}
+            className="w-7 h-7 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 flex items-center justify-center text-lg leading-none"
+          >
+            +
+          </button>
+          <span className="text-xs text-gray-500 ml-0.5">kg</span>
+        </div>
+      )}
 
       {/* Reps */}
       <div className="flex items-center gap-1">

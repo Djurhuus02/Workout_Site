@@ -98,7 +98,7 @@ function TemplateRow({ name, icon, subtitle, hovered, onMouseEnter, onMouseLeave
         width: 44, height: 44, borderRadius: 12,
         background: 'rgba(249,115,22,0.1)', display: 'flex',
         alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0,
-      }}>{icon}</div>
+      }}><span className="no-invert">{icon}</span></div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ margin: 0, fontSize: 15, fontWeight: 500, color: 'rgba(255,255,255,0.9)' }}>{name}</p>
         <p style={{ margin: '3px 0 0', fontSize: 12, color: 'rgba(255,255,255,0.3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{subtitle}</p>
@@ -259,7 +259,7 @@ export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWork
               <>
                 <p style={{ margin: '4px 0 6px', fontSize: 13, color: 'rgba(255,255,255,0.6)' }}>
                   {thisWeek.length > weeklyGoal
-                    ? `${thisWeek.length - weeklyGoal} extra this week — you're on fire! 🔥`
+                    ? <>{thisWeek.length - weeklyGoal} extra this week — you're on fire! <span className="no-invert">🔥</span></>
                     : `${thisWeek.length} of ${weeklyGoal} workouts this week`}
                 </p>
                 <div style={{ height: 4, borderRadius: 2, background: 'rgba(249,115,22,0.2)' }}>

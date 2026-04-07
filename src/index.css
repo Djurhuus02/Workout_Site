@@ -9,9 +9,17 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  ht
-  ml.light-mode {
+  html.light-mode {
     filter: invert(1) hue-rotate(180deg);
+  }
+
+  html.light-mode img {
+    filter: invert(1) hue-rotate(180deg);
+  }
+
+  html.light-mode .no-invert {
+    filter: invert(1) hue-rotate(180deg);
+    display: inline-block;
   }
 
   body {

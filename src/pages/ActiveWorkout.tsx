@@ -27,6 +27,7 @@ interface Props {
   onFinish: (notes?: string) => void
   onDiscard: () => void
   getLastSession: (exerciseId: string, excludeId?: string) => { exercises: WorkoutExercise[] } | null
+  bodyWeightKg?: number | null
 }
 
 export default function ActiveWorkout({
@@ -42,6 +43,7 @@ export default function ActiveWorkout({
   onFinish,
   onDiscard,
   getLastSession,
+  bodyWeightKg,
 }: Props) {
   const [showPicker, setShowPicker] = useState(false)
   const [elapsed, setElapsed] = useState(0)
@@ -215,19 +217,24 @@ export default function ActiveWorkout({
 
                   {/* Sets */}
                   <div className="px-2 pb-2 space-y-1">
-                    {entry.sets.map((set, i) => {
-                      const prevSet = lastExercise?.sets[i] ?? null
-                      return (
-                        <SetRow
-                          key={set.id}
-                          set={set}
-                          index={i}
-                          previous={prevSet ? { weight: prevSet.weight, reps: prevSet.reps } : null}
-                          onUpdate={patch => onUpdateSet(entry.id, set.id, patch)}
-                          onDelete={() => onRemoveSet(entry.id, set.id)}
-                        />
-                      )
-                    })}
+                    {(() => {
+                      const isBodyweight = exerciseList.find(e => e.id === entry.exerciseId)?.equipment === 'Bodyweight'
+                      return entry.sets.map((set, i) => {
+                        const prevSet = lastExercise?.sets[i] ?? null
+                        return (
+                          <SetRow
+                            key={set.id}
+                            set={set}
+                            index={i}
+                            previous={prevSet ? { weight: prevSet.weight, reps: prevSet.reps } : null}
+                            onUpdate={patch => onUpdateSet(entry.id, set.id, patch)}
+                            onDelete={() => onRemoveSet(entry.id, set.id)}
+                            isBodyweight={isBodyweight}
+                            bodyWeightKg={bodyWeightKg}
+                          />
+                        )
+                      })
+                    })()}
                   </div>
 
                   {/* Add set button */}

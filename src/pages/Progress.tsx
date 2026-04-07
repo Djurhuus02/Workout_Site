@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { WorkoutSession } from '../types'
+import { WorkoutSession, BodyWeightLog } from '../types'
 import { getPersonalRecords, getExerciseProgress } from '../utils/calculations'
 import { exercises } from '../data/exercises'
 import {
@@ -14,10 +14,14 @@ import {
 
 interface Props {
   workouts: WorkoutSession[]
+  bodyWeightLogs: BodyWeightLog[]
+  onAddBodyWeight: (weight_kg: number) => void
+  onDeleteBodyWeight: (id: string) => void
 }
 
-export default function Progress({ workouts }: Props) {
+export default function Progress({ workouts, bodyWeightLogs, onAddBodyWeight, onDeleteBodyWeight }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [bwInput, setBwInput] = useState('')
 
   const prs = useMemo(() => getPersonalRecords(workouts), [workouts])
 
@@ -56,9 +60,99 @@ export default function Progress({ workouts }: Props) {
     )
   }
 
+  const bwChartData = useMemo(() =>
+    [...bodyWeightLogs]
+      .reverse()
+      .slice(-30)
+      .map(l => ({
+        label: new Date(l.logged_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+        weight: l.weight_kg,
+        id: l.id,
+      })),
+    [bodyWeightLogs]
+  )
+
+  const handleAddBw = () => {
+    const val = parseFloat(bwInput)
+    if (!val || val <= 0) return
+    onAddBodyWeight(val)
+    setBwInput('')
+  }
+
   return (
     <div className="px-4 pt-6 pb-6">
       <h1 className="text-2xl font-bold text-white mb-6">Progress</h1>
+
+      {/* ── Body weight section ── */}
+      <div className="mb-6">
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Body Weight</p>
+
+        {/* Log input */}
+        <div className="flex gap-2 mb-3">
+          <input
+            type="number"
+            inputMode="decimal"
+            placeholder={bodyWeightLogs[0] ? `Last: ${bodyWeightLogs[0].weight_kg} kg` : 'Enter weight (kg)'}
+            value={bwInput}
+            onChange={e => setBwInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleAddBw()}
+            className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-white text-sm focus:outline-none focus:border-orange-500"
+          />
+          <button
+            onClick={handleAddBw}
+            className="px-4 py-2.5 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-xl transition-colors"
+          >
+            Log
+          </button>
+        </div>
+
+        {/* Chart */}
+        {bwChartData.length >= 2 ? (
+          <div className="bg-gray-900 rounded-xl p-4 border border-gray-800 mb-3">
+            <ResponsiveContainer width="100%" height={160}>
+              <LineChart data={bwChartData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} unit=" kg" domain={['auto', 'auto']} />
+                <Tooltip
+                  contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: 8, fontSize: 12 }}
+                  labelStyle={{ color: '#d1d5db' }}
+                  itemStyle={{ color: '#f97316' }}
+                  formatter={(val: number) => [`${val} kg`, 'Weight']}
+                />
+                <Line type="monotone" dataKey="weight" stroke="#f97316" strokeWidth={2} dot={{ fill: '#f97316', r: 3 }} activeDot={{ r: 5 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        ) : bodyWeightLogs.length === 1 ? (
+          <div className="bg-gray-900 rounded-xl p-3 border border-gray-800 mb-3">
+            <p className="text-xs text-gray-500">Log more entries to see your weight chart.</p>
+          </div>
+        ) : null}
+
+        {/* Recent logs */}
+        {bodyWeightLogs.length > 0 && (
+          <div className="space-y-1">
+            {bodyWeightLogs.slice(0, 5).map(log => (
+              <div key={log.id} className="flex items-center justify-between bg-gray-900 rounded-xl px-4 py-2.5 border border-gray-800">
+                <div>
+                  <span className="text-white font-semibold text-sm">{log.weight_kg} kg</span>
+                  <span className="text-gray-500 text-xs ml-2">
+                    {new Date(log.logged_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </span>
+                </div>
+                <button onClick={() => onDeleteBodyWeight(log.id)} className="text-gray-600 hover:text-red-400 transition-colors p-1">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+                    <path d="M10 11v6M14 11v6" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Exercise selector */}
       <div className="mb-4">

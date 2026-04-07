@@ -63,4 +63,10 @@ export interface PersonalRecord {
   date: string
 }
 
+export interface BodyWeightLog {
+  id: string
+  weight_kg: number
+  logged_at: string
+}
+
 export type Page = 'dashboard' | 'workout' | 'history' | 'exercises' | 'progress' | 'settings'

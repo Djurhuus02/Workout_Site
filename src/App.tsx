@@ -3,6 +3,7 @@ import { Page } from './types'
 import { useWorkouts } from './hooks/useWorkouts'
 import { useActiveWorkout } from './hooks/useActiveWorkout'
 import { useUserSettings } from './hooks/useUserSettings'
+import { useBodyWeight } from './hooks/useBodyWeight'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Navigation from './components/Navigation'
 import Dashboard from './pages/Dashboard'
@@ -22,6 +23,7 @@ function AppContent() {
   const workoutsHook = useWorkouts()
   const activeHook = useActiveWorkout()
   const settingsHook = useUserSettings()
+  const bodyWeightHook = useBodyWeight()
 
   useEffect(() => {
     localStorage.setItem('theme', theme)
@@ -87,6 +89,7 @@ function AppContent() {
             onFinish={handleWorkoutFinish}
             onDiscard={activeHook.discardWorkout}
             getLastSession={workoutsHook.getLastSession}
+            bodyWeightKg={bodyWeightHook.latest}
           />
         )}
         {page === 'history' && (
@@ -98,7 +101,12 @@ function AppContent() {
         )}
         {page === 'exercises' && <Exercises />}
         {page === 'progress' && (
-          <Progress workouts={workoutsHook.workouts} />
+          <Progress
+            workouts={workoutsHook.workouts}
+            bodyWeightLogs={bodyWeightHook.logs}
+            onAddBodyWeight={bodyWeightHook.addLog}
+            onDeleteBodyWeight={bodyWeightHook.deleteLog}
+          />
         )}
         {page === 'settings' && (
           <Settings onNavigate={setPage} theme={theme} onThemeChange={setTheme} />
