@@ -1,12 +1,15 @@
 import { useState, useMemo } from 'react'
-import { ExerciseCategory } from '../types'
+import { Exercise, ExerciseCategory } from '../types'
 import { exercises, categoryLabels, categoryColors } from '../data/exercises'
+import { exerciseImageMap } from '../data/exerciseImages'
+import ExerciseImageModal from '../components/ExerciseImageModal'
 
 const ALL = 'all'
 
 export default function Exercises() {
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<string>(ALL)
+  const [modalExercise, setModalExercise] = useState<Exercise | null>(null)
 
   const filtered = useMemo(() => {
     const q = query.toLowerCase()
@@ -34,99 +37,123 @@ export default function Exercises() {
   const categoryOrder = Object.values(categoryLabels)
 
   return (
-    <div className="pt-6 pb-6">
-      <div className="px-4 mb-4">
-        <h1 className="text-2xl font-bold text-white mb-4">Exercises</h1>
+    <>
+      {modalExercise && (
+        <ExerciseImageModal exercise={modalExercise} onClose={() => setModalExercise(null)} />
+      )}
+      <div className="pt-6 pb-6">
+        <div className="px-4 mb-4">
+          <h1 className="text-2xl font-bold text-white mb-4">Exercises</h1>
 
-        {/* Search */}
-        <div className="flex items-center gap-2 bg-gray-800 rounded-xl px-3 py-2.5 border border-gray-700 focus-within:border-orange-500 transition-colors mb-3">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-gray-500 flex-shrink-0">
-            <circle cx="11" cy="11" r="8" />
-            <line x1="21" y1="21" x2="16.65" y2="16.65" />
-          </svg>
-          <input
-            type="text"
-            placeholder="Search exercises or muscles..."
-            value={query}
-            onChange={e => setQuery(e.target.value)}
-            className="flex-1 bg-transparent text-white placeholder-gray-500 text-sm focus:outline-none"
-          />
-          {query && (
-            <button onClick={() => setQuery('')} className="text-gray-500 hover:text-white">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                <line x1="18" y1="6" x2="6" y2="18" />
-                <line x1="6" y1="6" x2="18" y2="18" />
-              </svg>
-            </button>
+          {/* Search */}
+          <div className="flex items-center gap-2 bg-gray-800 rounded-xl px-3 py-2.5 border border-gray-700 focus-within:border-orange-500 transition-colors mb-3">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 text-gray-500 flex-shrink-0">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search exercises or muscles..."
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              className="flex-1 bg-transparent text-white placeholder-gray-500 text-sm focus:outline-none"
+            />
+            {query && (
+              <button onClick={() => setQuery('')} className="text-gray-500 hover:text-white">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Category chips */}
+        <div className="flex gap-2 px-4 mb-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
+          <button
+            onClick={() => setCategory(ALL)}
+            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors
+              ${category === ALL ? 'bg-orange-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+          >
+            All ({exercises.length})
+          </button>
+          {Object.entries(categoryLabels).map(([key, label]) => {
+            const count = exercises.filter(e => e.category === key).length
+            return (
+              <button
+                key={key}
+                onClick={() => setCategory(key)}
+                className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors
+                  ${category === key ? 'bg-orange-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
+              >
+                {label} ({count})
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Results */}
+        <div className="px-4">
+          {filtered.length === 0 ? (
+            <p className="text-center text-gray-600 mt-12">No exercises found</p>
+          ) : grouped ? (
+            categoryOrder
+              .filter(label => grouped.has(label))
+              .map(label => {
+                const exs = grouped.get(label)!
+                const key = Object.entries(categoryLabels).find(([, v]) => v === label)![0]
+                return (
+                  <div key={label} className="mb-6">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${categoryColors[key]}`}>
+                        {label}
+                      </span>
+                      <span className="text-xs text-gray-600">{exs.length}</span>
+                    </div>
+                    <div className="space-y-px">
+                      {exs.map(ex => (
+                        <ExerciseItem key={ex.id} exercise={ex} onImageClick={setModalExercise} />
+                      ))}
+                    </div>
+                  </div>
+                )
+              })
+          ) : (
+            <div className="space-y-px">
+              {filtered.map(ex => (
+                <ExerciseItem key={ex.id} exercise={ex} onImageClick={setModalExercise} />
+              ))}
+            </div>
           )}
         </div>
       </div>
-
-      {/* Category chips */}
-      <div className="flex gap-2 px-4 mb-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
-        <button
-          onClick={() => setCategory(ALL)}
-          className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors
-            ${category === ALL ? 'bg-orange-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
-        >
-          All ({exercises.length})
-        </button>
-        {Object.entries(categoryLabels).map(([key, label]) => {
-          const count = exercises.filter(e => e.category === key).length
-          return (
-            <button
-              key={key}
-              onClick={() => setCategory(key)}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors
-                ${category === key ? 'bg-orange-500 text-white' : 'bg-gray-800 text-gray-400 hover:bg-gray-700'}`}
-            >
-              {label} ({count})
-            </button>
-          )
-        })}
-      </div>
-
-      {/* Results */}
-      <div className="px-4">
-        {filtered.length === 0 ? (
-          <p className="text-center text-gray-600 mt-12">No exercises found</p>
-        ) : grouped ? (
-          categoryOrder
-            .filter(label => grouped.has(label))
-            .map(label => {
-              const exs = grouped.get(label)!
-              const key = Object.entries(categoryLabels).find(([, v]) => v === label)![0]
-              return (
-                <div key={label} className="mb-6">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${categoryColors[key]}`}>
-                      {label}
-                    </span>
-                    <span className="text-xs text-gray-600">{exs.length}</span>
-                  </div>
-                  <div className="space-y-px">
-                    {exs.map(ex => (
-                      <ExerciseItem key={ex.id} exercise={ex} />
-                    ))}
-                  </div>
-                </div>
-              )
-            })
-        ) : (
-          <div className="space-y-px">
-            {filtered.map(ex => <ExerciseItem key={ex.id} exercise={ex} />)}
-          </div>
-        )}
-      </div>
-    </div>
+    </>
   )
 }
 
-function ExerciseItem({ exercise }: { exercise: typeof exercises[0] }) {
+function ExerciseItem({ exercise, onImageClick }: { exercise: Exercise; onImageClick: (e: Exercise) => void }) {
   const badgeCls = categoryColors[exercise.category] ?? 'bg-gray-700 text-gray-400'
+  const imgUrl = exerciseImageMap[exercise.id]
   return (
-    <div className="flex items-center justify-between gap-3 py-3 border-b border-gray-800 last:border-0">
-      <div className="min-w-0">
+    <div className="flex items-center gap-3 py-3 border-b border-gray-800 last:border-0">
+      <button
+        onClick={() => onImageClick(exercise)}
+        className="flex-shrink-0 w-12 h-12 rounded-lg bg-gray-800 overflow-hidden focus:outline-none active:opacity-70 transition-opacity"
+      >
+        {imgUrl ? (
+          <img src={imgUrl} alt={exercise.name} className="w-full h-full object-cover" loading="lazy" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5 text-gray-600">
+              <rect x="2" y="9" width="3" height="6" rx="1" /><rect x="19" y="9" width="3" height="6" rx="1" />
+              <rect x="5" y="7" width="2" height="10" rx="0.5" /><rect x="17" y="7" width="2" height="10" rx="0.5" />
+              <line x1="7" y1="12" x2="17" y2="12" />
+            </svg>
+          </div>
+        )}
+      </button>
+      <div className="min-w-0 flex-1">
         <p className="font-medium text-white text-sm">{exercise.name}</p>
         <p className="text-xs text-gray-500 mt-0.5 truncate">
           {exercise.primaryMuscles.join(', ')}

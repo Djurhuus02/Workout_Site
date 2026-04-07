@@ -9,7 +9,8 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  html.light-mode {
+  ht
+  ml.light-mode {
     filter: invert(1) hue-rotate(180deg);
   }
 

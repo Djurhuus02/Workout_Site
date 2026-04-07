@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react'
 import ExercisePicker from '../components/ExercisePicker'
 import SetRow from '../components/SetRow'
+import ExerciseImageModal from '../components/ExerciseImageModal'
 import { Exercise, WorkoutExercise, WorkoutSet } from '../types'
 import { formatDuration } from '../utils/calculations'
+import { exercises as exerciseList } from '../data/exercises'
+import { exerciseImageMap } from '../data/exerciseImages'
 
 interface ActiveWorkoutData {
   id: string
@@ -45,6 +48,7 @@ export default function ActiveWorkout({
   const [editingName, setEditingName] = useState(false)
   const [showFinishModal, setShowFinishModal] = useState(false)
   const [notes, setNotes] = useState('')
+  const [modalExercise, setModalExercise] = useState<Exercise | null>(null)
 
   useEffect(() => {
     if (!active) return
@@ -97,6 +101,9 @@ export default function ActiveWorkout({
 
   return (
     <>
+      {modalExercise && (
+        <ExerciseImageModal exercise={modalExercise} onClose={() => setModalExercise(null)} />
+      )}
       {showPicker && (
         <ExercisePicker
           onSelect={handleSelectExercise}
@@ -160,10 +167,34 @@ export default function ActiveWorkout({
                 <div key={entry.id} className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
                   {/* Exercise header */}
                   <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800">
-                    <h3 className="font-semibold text-white">{entry.exerciseName}</h3>
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      {(() => {
+                        const ex = exerciseList.find(e => e.id === entry.exerciseId)
+                        const imgUrl = exerciseImageMap[entry.exerciseId]
+                        return (
+                          <button
+                            onClick={() => ex && setModalExercise(ex)}
+                            className="flex-shrink-0 w-8 h-8 rounded-md bg-gray-800 overflow-hidden focus:outline-none active:opacity-70 transition-opacity"
+                          >
+                            {imgUrl ? (
+                              <img src={imgUrl} alt={entry.exerciseName} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-4 h-4 text-gray-600">
+                                  <rect x="2" y="9" width="3" height="6" rx="1" /><rect x="19" y="9" width="3" height="6" rx="1" />
+                                  <rect x="5" y="7" width="2" height="10" rx="0.5" /><rect x="17" y="7" width="2" height="10" rx="0.5" />
+                                  <line x1="7" y1="12" x2="17" y2="12" />
+                                </svg>
+                              </div>
+                            )}
+                          </button>
+                        )
+                      })()}
+                      <h3 className="font-semibold text-white truncate">{entry.exerciseName}</h3>
+                    </div>
                     <button
                       onClick={() => onRemoveExercise(entry.id)}
-                      className="text-gray-600 hover:text-red-400 transition-colors p-1"
+                      className="text-gray-600 hover:text-red-400 transition-colors p-1 flex-shrink-0"
                     >
                       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
                         <line x1="18" y1="6" x2="6" y2="18" />
