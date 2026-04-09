@@ -61,6 +61,8 @@ export default function ActiveWorkout({
   const [prSets, setPrSets] = useState<Set<string>>(new Set())
   // Exercises that already triggered confetti this session (fire only once per exercise)
   const [confettiFired, setConfettiFired] = useState<Set<string>>(new Set())
+  // Best est. 1RM seen per exercise this session — so only a new session-high gets the PR badge
+  const sessionBests = useRef<Map<string, number>>(new Map())
 
   // Rest timer
   const [restRemaining, setRestRemaining] = useState(0)
@@ -118,8 +120,12 @@ export default function ActiveWorkout({
   const handleSetCompleted = (entryId: string, setId: string, exerciseId: string, weight: number, reps: number) => {
     if (weight <= 0 || reps <= 0) return
     const currentOneRM = calculateOneRM(weight, reps)
-    const existing = savedPRs.get(exerciseId)
-    if (!existing || currentOneRM > existing.estimatedOneRM) {
+    const savedBest = savedPRs.get(exerciseId)?.estimatedOneRM ?? 0
+    const sessionBest = sessionBests.current.get(exerciseId) ?? 0
+    const baseline = Math.max(savedBest, sessionBest)
+
+    if (currentOneRM > baseline) {
+      sessionBests.current.set(exerciseId, currentOneRM)
       setPrSets(prev => new Set(prev).add(`${entryId}-${setId}`))
       // Only fire confetti once per exercise per session
       if (!confettiFired.has(exerciseId)) {
