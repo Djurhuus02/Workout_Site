@@ -21,6 +21,8 @@ export default function Friends({ weeklyGoal }: Props) {
   const [usernameInput, setUsernameInput] = useState('')
   const [editingUsername, setEditingUsername] = useState(false)
   const [usernameError, setUsernameError] = useState('')
+  const [sendingTo, setSendingTo] = useState<string | null>(null)
+  const [sendError, setSendError] = useState('')
   const [challengeModal, setChallengeModal] = useState<{ friendId: string; name: string } | null>(null)
   const [challengeGoal, setChallengeGoal] = useState(weeklyGoal || 3)
 
@@ -173,6 +175,8 @@ export default function Friends({ weeklyGoal }: Props) {
           )}
         </div>
 
+        {sendError && <p className="text-xs text-red-400 mb-2">{sendError}</p>}
+
         {searchQuery && (
           <div className="space-y-1">
             {searchResults.length === 0 ? (
@@ -192,10 +196,17 @@ export default function Friends({ weeklyGoal }: Props) {
                   <span className="text-xs text-gray-500">Sent</span>
                 ) : (
                   <button
-                    onClick={() => sendRequest(p.id)}
-                    className="px-3 py-1.5 bg-orange-500 text-white text-xs font-semibold rounded-lg hover:bg-orange-600 transition-colors"
+                    disabled={sendingTo === p.id}
+                    onClick={async () => {
+                      setSendingTo(p.id)
+                      setSendError('')
+                      const err = await sendRequest(p.id)
+                      setSendingTo(null)
+                      if (err) setSendError(err)
+                    }}
+                    className="px-3 py-1.5 bg-orange-500 text-white text-xs font-semibold rounded-lg hover:bg-orange-600 transition-colors disabled:opacity-50"
                   >
-                    Add
+                    {sendingTo === p.id ? '...' : 'Add'}
                   </button>
                 )}
               </div>

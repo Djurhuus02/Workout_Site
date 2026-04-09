@@ -16,7 +16,7 @@ export function useFriends() {
     if (!user) return
     setLoading(true)
 
-    // Load own profile — create if missing (existing users pre-trigger)
+    // Own profile — create if missing (users who signed up before the trigger)
     let { data: prof } = await supabase
       .from('profiles')
       .select('id, username, display_name')
@@ -32,56 +32,92 @@ export function useFriends() {
     }
     setProfile(prof as Profile)
 
-    // Load friendships with both profiles
-    const { data: fs } = await supabase
+    // Load raw friendships (no join — FK points to auth.users not profiles)
+    const { data: fs, error: fsError } = await supabase
       .from('friendships')
-      .select('*, requester:profiles!requester_id(id,username,display_name), addressee:profiles!addressee_id(id,username,display_name)')
+      .select('*')
       .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
 
-    if (fs) {
-      setFriends((fs as Friendship[]).filter(f => f.status === 'accepted'))
-      setPendingIncoming((fs as Friendship[]).filter(f => f.status === 'pending' && f.addressee_id === user.id))
-      setPendingSent((fs as Friendship[]).filter(f => f.status === 'pending' && f.requester_id === user.id))
+    if (fsError) console.error('friendships fetch error:', fsError)
+
+    if (!fs || fs.length === 0) {
+      setFriends([])
+      setPendingIncoming([])
+      setPendingSent([])
+      setLoading(false)
+      return
     }
 
+    // Collect the other users' IDs and fetch their profiles separately
+    const otherIds = [...new Set(
+      fs.map(f => f.requester_id === user.id ? f.addressee_id : f.requester_id)
+    )]
+
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('id, username, display_name')
+      .in('id', otherIds)
+
+    const profileMap = new Map((profileData ?? []).map(p => [p.id, p as Profile]))
+
+    // Enrich friendships with profile objects
+    const enriched: Friendship[] = fs.map(f => ({
+      ...f,
+      requester: profileMap.get(f.requester_id),
+      addressee: profileMap.get(f.addressee_id),
+    }))
+
+    setFriends(enriched.filter(f => f.status === 'accepted'))
+    setPendingIncoming(enriched.filter(f => f.status === 'pending' && f.addressee_id === user.id))
+    setPendingSent(enriched.filter(f => f.status === 'pending' && f.requester_id === user.id))
     setLoading(false)
   }, [user])
 
   useEffect(() => { fetchAll() }, [fetchAll])
 
   const updateUsername = useCallback(async (username: string) => {
-    if (!user) return
+    if (!user) return null
     const clean = username.trim().toLowerCase().replace(/[^a-z0-9_]/g, '')
     const { error } = await supabase
       .from('profiles')
       .upsert({ id: user.id, username: clean })
     if (!error) setProfile(p => p ? { ...p, username: clean } : p)
-    return error
+    return error ?? null
   }, [user])
 
   const searchUsers = useCallback(async (query: string) => {
     if (!query.trim() || !user) { setSearchResults([]); return }
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .select('id, username, display_name')
       .neq('id', user.id)
       .or(`username.ilike.%${query}%,display_name.ilike.%${query}%`)
       .limit(10)
+    if (error) console.error('search error:', error)
     setSearchResults((data as Profile[]) ?? [])
   }, [user])
 
-  const sendRequest = useCallback(async (addresseeId: string) => {
-    if (!user) return
-    await supabase.from('friendships').insert({
+  const sendRequest = useCallback(async (addresseeId: string): Promise<string | null> => {
+    if (!user) return 'Not logged in'
+    const { error } = await supabase.from('friendships').insert({
       requester_id: user.id,
       addressee_id: addresseeId,
       status: 'pending',
     })
+    if (error) {
+      console.error('sendRequest error:', error)
+      return error.message
+    }
     await fetchAll()
+    return null
   }, [user, fetchAll])
 
   const acceptRequest = useCallback(async (friendshipId: string) => {
-    await supabase.from('friendships').update({ status: 'accepted' }).eq('id', friendshipId)
+    const { error } = await supabase
+      .from('friendships')
+      .update({ status: 'accepted' })
+      .eq('id', friendshipId)
+    if (error) console.error('acceptRequest error:', error)
     await fetchAll()
   }, [fetchAll])
 
@@ -95,7 +131,6 @@ export function useFriends() {
     await fetchAll()
   }, [fetchAll])
 
-  // Get the friend's profile from a friendship record
   const getFriendProfile = useCallback((f: Friendship): Profile | undefined => {
     if (!user) return undefined
     return f.requester_id === user.id ? f.addressee : f.requester
