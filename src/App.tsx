@@ -4,6 +4,7 @@ import { useWorkouts } from './hooks/useWorkouts'
 import { useActiveWorkout } from './hooks/useActiveWorkout'
 import { useUserSettings } from './hooks/useUserSettings'
 import { useBodyWeight } from './hooks/useBodyWeight'
+import { useNotifications } from './hooks/useNotifications'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Navigation from './components/Navigation'
 import Dashboard from './pages/Dashboard'
@@ -25,6 +26,7 @@ function AppContent() {
   const activeHook = useActiveWorkout()
   const settingsHook = useUserSettings()
   const bodyWeightHook = useBodyWeight()
+  const notificationCount = useNotifications()
 
   useEffect(() => {
     localStorage.setItem('theme', theme)
@@ -116,7 +118,7 @@ function AppContent() {
           <Friends weeklyGoal={settingsHook.weeklyGoal ?? 3} />
         )}
       </div>
-      <Navigation current={page} onChange={setPage} hasActive={activeHook.isActive} />
+      <Navigation current={page} onChange={setPage} hasActive={activeHook.isActive} friendNotifications={notificationCount} />
     </div>
   )
 }

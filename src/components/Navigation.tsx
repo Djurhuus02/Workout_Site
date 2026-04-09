@@ -4,6 +4,7 @@ interface Props {
   current: Page
   onChange: (page: Page) => void
   hasActive: boolean
+  friendNotifications: number
 }
 
 const tabs: { id: Page; label: string }[] = [
@@ -71,7 +72,7 @@ function NavIcon({ type, active }: { type: Page; active: boolean }) {
   return icons[type]
 }
 
-export default function Navigation({ current, onChange, hasActive }: Props) {
+export default function Navigation({ current, onChange, hasActive, friendNotifications }: Props) {
   return (
     <nav
       style={{
@@ -112,6 +113,18 @@ export default function Navigation({ current, onChange, hasActive }: Props) {
                   position: 'absolute', top: -2, right: -2,
                   width: 8, height: 8, borderRadius: '50%', background: '#4ade80',
                 }} />
+              )}
+              {tab.id === 'friends' && friendNotifications > 0 && (
+                <span style={{
+                  position: 'absolute', top: -4, right: -6,
+                  minWidth: 16, height: 16, borderRadius: 8,
+                  background: '#F97316', color: 'white',
+                  fontSize: 10, fontWeight: 700,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: '0 3px',
+                }}>
+                  {friendNotifications}
+                </span>
               )}
             </div>
             <span style={{
