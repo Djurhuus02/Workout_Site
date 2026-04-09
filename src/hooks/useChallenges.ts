@@ -95,11 +95,9 @@ export function useChallenges() {
   const createChallenge = useCallback(async (friendId: string, goal: number) => {
     if (!user) return
     const weekStart = getWeekStart()
-    // Prevent duplicate challenges this week
-    const duplicate = [...activeChallenges, ...pendingSent].find(c =>
-      c.week_start === weekStart &&
-      ((c.challenger_id === user.id && c.challenged_id === friendId) ||
-       (c.challenged_id === user.id && c.challenger_id === friendId))
+    // Prevent any duplicate — one active/pending challenge per friend at a time
+    const duplicate = [...activeChallenges, ...pendingSent, ...pendingIncoming].find(c =>
+      (c.challenger_id === friendId || c.challenged_id === friendId)
     )
     if (duplicate) return
 

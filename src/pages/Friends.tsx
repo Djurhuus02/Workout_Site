@@ -186,9 +186,18 @@ export default function Friends({ weeklyGoal }: Props) {
             Leaderboard
           </p>
           <div className="space-y-3">
-            {activeChallenges.map(c => (
-              <ChallengeCard key={c.id} challenge={c} userId={user?.id ?? ''} />
-            ))}
+            {/* Deduplicate — keep only the most recent challenge per friend */}
+            {activeChallenges
+              .reduce<Challenge[]>((acc, c) => {
+                const friendId = c.challenger_id === user?.id ? c.challenged_id : c.challenger_id
+                if (!acc.some(x => (x.challenger_id === friendId || x.challenged_id === friendId))) {
+                  acc.push(c)
+                }
+                return acc
+              }, [])
+              .map(c => (
+                <ChallengeCard key={c.id} challenge={c} userId={user?.id ?? ''} />
+              ))}
           </div>
         </div>
       )}
