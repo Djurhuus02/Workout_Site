@@ -8,9 +8,11 @@ interface Props {
   onDelete: () => void
   isBodyweight?: boolean
   bodyWeightKg?: number | null
+  isPR?: boolean
+  onCompleted?: () => void
 }
 
-export default function SetRow({ set, index, previous, onUpdate, onDelete, isBodyweight, bodyWeightKg }: Props) {
+export default function SetRow({ set, index, previous, onUpdate, onDelete, isBodyweight, bodyWeightKg, isPR, onCompleted }: Props) {
   const handleWeight = (delta: number) => {
     const next = Math.max(0, Math.round((set.weight + delta) * 4) / 4)
     onUpdate({ weight: next })
@@ -24,10 +26,14 @@ export default function SetRow({ set, index, previous, onUpdate, onDelete, isBod
 
   return (
     <div className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors
-      ${set.completed ? 'bg-green-500/10' : 'bg-gray-800'}`}>
+      ${isPR ? 'bg-yellow-500/10 ring-1 ring-yellow-500/40' : set.completed ? 'bg-green-500/10' : 'bg-gray-800'}`}>
 
-      {/* Set number */}
-      <span className="w-5 text-center text-xs font-bold text-gray-500">{index + 1}</span>
+      {/* Set number or PR badge */}
+      {isPR ? (
+        <span className="w-5 text-center text-xs font-bold text-yellow-400">PR</span>
+      ) : (
+        <span className="w-5 text-center text-xs font-bold text-gray-500">{index + 1}</span>
+      )}
 
       {/* Previous hint */}
       <span className="w-16 text-center text-xs text-gray-600 truncate">{prevLabel}</span>
@@ -107,7 +113,11 @@ export default function SetRow({ set, index, previous, onUpdate, onDelete, isBod
 
       {/* Complete toggle */}
       <button
-        onClick={() => onUpdate({ completed: !set.completed })}
+        onClick={() => {
+          const nowCompleted = !set.completed
+          onUpdate({ completed: nowCompleted })
+          if (nowCompleted) onCompleted?.()
+        }}
         className={`w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-colors
           ${set.completed
             ? 'bg-green-500 border-green-500 text-white'

@@ -93,6 +93,7 @@ function AppContent() {
             onDiscard={activeHook.discardWorkout}
             getLastSession={workoutsHook.getLastSession}
             bodyWeightKg={bodyWeightHook.latest}
+            workouts={workoutsHook.workouts}
           />
         )}
         {page === 'history' && (

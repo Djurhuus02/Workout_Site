@@ -1,11 +1,14 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
+import confetti from 'canvas-confetti'
 import ExercisePicker from '../components/ExercisePicker'
 import SetRow from '../components/SetRow'
 import ExerciseImageModal from '../components/ExerciseImageModal'
-import { Exercise, WorkoutExercise, WorkoutSet } from '../types'
-import { formatDuration } from '../utils/calculations'
+import { Exercise, WorkoutExercise, WorkoutSet, WorkoutSession } from '../types'
+import { formatDuration, getPersonalRecords, calculateOneRM } from '../utils/calculations'
 import { exercises as exerciseList } from '../data/exercises'
 import { exerciseImageMap } from '../data/exerciseImages'
+
+const REST_PRESETS = [60, 90, 120, 180]
 
 interface ActiveWorkoutData {
   id: string
@@ -28,6 +31,7 @@ interface Props {
   onDiscard: () => void
   getLastSession: (exerciseId: string, excludeId?: string) => { exercises: WorkoutExercise[] } | null
   bodyWeightKg?: number | null
+  workouts: WorkoutSession[]
 }
 
 export default function ActiveWorkout({
@@ -44,6 +48,7 @@ export default function ActiveWorkout({
   onDiscard,
   getLastSession,
   bodyWeightKg,
+  workouts,
 }: Props) {
   const [showPicker, setShowPicker] = useState(false)
   const [elapsed, setElapsed] = useState(0)
@@ -51,6 +56,20 @@ export default function ActiveWorkout({
   const [showFinishModal, setShowFinishModal] = useState(false)
   const [notes, setNotes] = useState('')
   const [modalExercise, setModalExercise] = useState<Exercise | null>(null)
+
+  // PR tracking — keys are `${entryId}-${setId}`
+  const [prSets, setPrSets] = useState<Set<string>>(new Set())
+
+  // Rest timer
+  const [restRemaining, setRestRemaining] = useState(0)
+  const [restTotal, setRestTotal] = useState(90)
+  const restRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  // Compute saved PRs (excluding current in-progress workout)
+  const savedPRs = useMemo(
+    () => getPersonalRecords(workouts.filter(w => w.id !== active?.id)),
+    [workouts, active?.id]
+  )
 
   useEffect(() => {
     if (!active) return
@@ -60,6 +79,56 @@ export default function ActiveWorkout({
     setElapsed(Math.round((Date.now() - active.startTime) / 1000))
     return () => clearInterval(interval)
   }, [active])
+
+  // Rest timer countdown
+  useEffect(() => {
+    if (restRemaining <= 0) {
+      if (restRef.current) clearInterval(restRef.current)
+      if (restRemaining === 0 && restTotal > 0) return
+      // Timer just hit 0 — vibrate
+      navigator.vibrate?.([200, 100, 200])
+      return
+    }
+  }, [restRemaining, restTotal])
+
+  const startRest = (seconds: number) => {
+    if (restRef.current) clearInterval(restRef.current)
+    setRestTotal(seconds)
+    setRestRemaining(seconds)
+    restRef.current = setInterval(() => {
+      setRestRemaining(prev => {
+        if (prev <= 1) {
+          clearInterval(restRef.current!)
+          navigator.vibrate?.([200, 100, 200])
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+  }
+
+  const stopRest = () => {
+    if (restRef.current) clearInterval(restRef.current)
+    setRestRemaining(0)
+    setRestTotal(0)
+  }
+
+  const handleSetCompleted = (entryId: string, setId: string, exerciseId: string, weight: number, reps: number) => {
+    if (weight <= 0 || reps <= 0) return
+    const currentOneRM = calculateOneRM(weight, reps)
+    const existing = savedPRs.get(exerciseId)
+    if (!existing || currentOneRM > existing.estimatedOneRM) {
+      setPrSets(prev => new Set(prev).add(`${entryId}-${setId}`))
+      confetti({
+        particleCount: 120,
+        spread: 80,
+        origin: { y: 0.5 },
+        colors: ['#F97316', '#FBBF24', '#FDE68A', '#ffffff'],
+      })
+    }
+    // Auto-start rest timer with last used duration
+    startRest(restTotal || 90)
+  }
 
   const handleDiscard = () => {
     if (confirm('Discard this workout? All progress will be lost.')) {
@@ -100,6 +169,7 @@ export default function ActiveWorkout({
   }
 
   const excludedIds = active.exercises.map(e => e.exerciseId)
+  const restProgress = restTotal > 0 ? restRemaining / restTotal : 0
 
   return (
     <>
@@ -164,6 +234,7 @@ export default function ActiveWorkout({
             active.exercises.map(entry => {
               const lastSession = getLastSession(entry.exerciseId, active.id)
               const lastExercise = lastSession?.exercises.find(e => e.exerciseId === entry.exerciseId)
+              const isBodyweight = exerciseList.find(e => e.id === entry.exerciseId)?.equipment === 'Bodyweight'
 
               return (
                 <div key={entry.id} className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
@@ -217,24 +288,24 @@ export default function ActiveWorkout({
 
                   {/* Sets */}
                   <div className="px-2 pb-2 space-y-1">
-                    {(() => {
-                      const isBodyweight = exerciseList.find(e => e.id === entry.exerciseId)?.equipment === 'Bodyweight'
-                      return entry.sets.map((set, i) => {
-                        const prevSet = lastExercise?.sets[i] ?? null
-                        return (
-                          <SetRow
-                            key={set.id}
-                            set={set}
-                            index={i}
-                            previous={prevSet ? { weight: prevSet.weight, reps: prevSet.reps } : null}
-                            onUpdate={patch => onUpdateSet(entry.id, set.id, patch)}
-                            onDelete={() => onRemoveSet(entry.id, set.id)}
-                            isBodyweight={isBodyweight}
-                            bodyWeightKg={bodyWeightKg}
-                          />
-                        )
-                      })
-                    })()}
+                    {entry.sets.map((set, i) => {
+                      const prevSet = lastExercise?.sets[i] ?? null
+                      const isPR = prSets.has(`${entry.id}-${set.id}`)
+                      return (
+                        <SetRow
+                          key={set.id}
+                          set={set}
+                          index={i}
+                          previous={prevSet ? { weight: prevSet.weight, reps: prevSet.reps } : null}
+                          onUpdate={patch => onUpdateSet(entry.id, set.id, patch)}
+                          onDelete={() => onRemoveSet(entry.id, set.id)}
+                          isBodyweight={isBodyweight}
+                          bodyWeightKg={bodyWeightKg}
+                          isPR={isPR}
+                          onCompleted={() => handleSetCompleted(entry.id, set.id, entry.exerciseId, set.weight, set.reps)}
+                        />
+                      )
+                    })}
                   </div>
 
                   {/* Add set button */}
@@ -272,6 +343,58 @@ export default function ActiveWorkout({
           Finish Workout
         </button>
       </div>
+
+      {/* Rest timer — floating pill above nav */}
+      {restRemaining > 0 && (
+        <div style={{
+          position: 'fixed', bottom: 'calc(4.5rem + env(safe-area-inset-bottom) + 12px)',
+          left: '50%', transform: 'translateX(-50%)',
+          width: 'calc(100% - 32px)', maxWidth: 480,
+          background: '#1a1d24', border: '1px solid rgba(255,255,255,0.1)',
+          borderRadius: 16, padding: '12px 16px', zIndex: 90,
+          boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+        }}>
+          {/* Progress bar */}
+          <div style={{ height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 2, marginBottom: 10, overflow: 'hidden' }}>
+            <div style={{
+              height: '100%', borderRadius: 2,
+              background: restRemaining <= 10 ? '#ef4444' : '#F97316',
+              width: `${restProgress * 100}%`,
+              transition: 'width 1s linear, background 0.3s',
+            }} />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div>
+              <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 2 }}>Rest</p>
+              <p style={{ margin: 0, fontSize: 22, fontWeight: 700, color: restRemaining <= 10 ? '#ef4444' : 'white', fontVariantNumeric: 'tabular-nums' }}>
+                {Math.floor(restRemaining / 60)}:{String(restRemaining % 60).padStart(2, '0')}
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+              {REST_PRESETS.map(s => (
+                <button key={s} onClick={() => startRest(s)} style={{
+                  padding: '4px 8px', borderRadius: 8, fontSize: 11, fontWeight: 600,
+                  background: restTotal === s ? 'rgba(249,115,22,0.2)' : 'rgba(255,255,255,0.06)',
+                  color: restTotal === s ? '#F97316' : 'rgba(255,255,255,0.5)',
+                  border: restTotal === s ? '1px solid rgba(249,115,22,0.4)' : '1px solid transparent',
+                  cursor: 'pointer',
+                }}>
+                  {s < 60 ? `${s}s` : s % 60 === 0 ? `${s / 60}m` : `${Math.floor(s / 60)}m${s % 60}s`}
+                </button>
+              ))}
+              <button onClick={stopRest} style={{
+                width: 28, height: 28, borderRadius: '50%', border: 'none',
+                background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" width={12} height={12}>
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Finish modal */}
       {showFinishModal && (
