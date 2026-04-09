@@ -59,6 +59,8 @@ export default function ActiveWorkout({
 
   // PR tracking — keys are `${entryId}-${setId}`
   const [prSets, setPrSets] = useState<Set<string>>(new Set())
+  // Exercises that already triggered confetti this session (fire only once per exercise)
+  const [confettiFired, setConfettiFired] = useState<Set<string>>(new Set())
 
   // Rest timer
   const [restRemaining, setRestRemaining] = useState(0)
@@ -119,12 +121,16 @@ export default function ActiveWorkout({
     const existing = savedPRs.get(exerciseId)
     if (!existing || currentOneRM > existing.estimatedOneRM) {
       setPrSets(prev => new Set(prev).add(`${entryId}-${setId}`))
-      confetti({
-        particleCount: 120,
-        spread: 80,
-        origin: { y: 0.5 },
-        colors: ['#F97316', '#FBBF24', '#FDE68A', '#ffffff'],
-      })
+      // Only fire confetti once per exercise per session
+      if (!confettiFired.has(exerciseId)) {
+        setConfettiFired(prev => new Set(prev).add(exerciseId))
+        confetti({
+          particleCount: 120,
+          spread: 80,
+          origin: { y: 0.5 },
+          colors: ['#F97316', '#FBBF24', '#FDE68A', '#ffffff'],
+        })
+      }
     }
     // Auto-start rest timer with last used duration
     startRest(restTotal || 90)
