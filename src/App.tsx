@@ -13,6 +13,7 @@ import Exercises from './pages/Exercises'
 import Progress from './pages/Progress'
 import Login from './pages/Login'
 import Settings from './pages/Settings'
+import Friends from './pages/Friends'
 
 function AppContent() {
   const [page, setPage] = useState<Page>('dashboard')
@@ -110,6 +111,9 @@ function AppContent() {
         )}
         {page === 'settings' && (
           <Settings onNavigate={setPage} theme={theme} onThemeChange={setTheme} />
+        )}
+        {page === 'friends' && (
+          <Friends weeklyGoal={settingsHook.weeklyGoal ?? 3} />
         )}
       </div>
       <Navigation current={page} onChange={setPage} hasActive={activeHook.isActive} />

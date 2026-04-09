@@ -69,4 +69,34 @@ export interface BodyWeightLog {
   logged_at: string
 }
 
-export type Page = 'dashboard' | 'workout' | 'history' | 'exercises' | 'progress' | 'settings'
+export interface Profile {
+  id: string
+  username: string | null
+  display_name: string | null
+}
+
+export interface Friendship {
+  id: string
+  requester_id: string
+  addressee_id: string
+  status: 'pending' | 'accepted' | 'declined'
+  created_at: string
+  requester?: Profile
+  addressee?: Profile
+}
+
+export interface Challenge {
+  id: string
+  challenger_id: string
+  challenged_id: string
+  goal: number
+  week_start: string
+  status: 'active' | 'completed'
+  created_at: string
+  challenger?: Profile
+  challenged?: Profile
+  my_count?: number
+  their_count?: number
+}
+
+export type Page = 'dashboard' | 'workout' | 'history' | 'exercises' | 'progress' | 'settings' | 'friends'
