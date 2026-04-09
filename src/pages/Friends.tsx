@@ -19,7 +19,7 @@ export default function Friends({ weeklyGoal }: Props) {
 
   const {
     activeChallenges, pendingIncoming: challengeRequests, pendingSent: challengesSent,
-    createChallenge, acceptChallenge, declineChallenge, hasPendingOrActive,
+    createChallenge, acceptChallenge, declineChallenge, quitChallenge, hasPendingOrActive,
   } = useChallenges()
 
   const [searchQuery, setSearchQuery] = useState('')
@@ -196,7 +196,7 @@ export default function Friends({ weeklyGoal }: Props) {
                 return acc
               }, [])
               .map(c => (
-                <ChallengeCard key={c.id} challenge={c} userId={user?.id ?? ''} />
+                <ChallengeCard key={c.id} challenge={c} userId={user?.id ?? ''} onQuit={() => quitChallenge(c.id)} />
               ))}
           </div>
         </div>
@@ -369,7 +369,7 @@ export default function Friends({ weeklyGoal }: Props) {
   )
 }
 
-function ChallengeCard({ challenge: c, userId }: { challenge: Challenge; userId: string }) {
+function ChallengeCard({ challenge: c, userId, onQuit }: { challenge: Challenge; userId: string; onQuit: () => void }) {
   const myCount = c.my_count ?? 0
   const theirCount = c.their_count ?? 0
   const goal = c.goal
@@ -425,8 +425,14 @@ function ChallengeCard({ challenge: c, userId }: { challenge: Challenge; userId:
         </div>
       </div>
 
-      <div className="pt-2 border-t border-gray-800">
-        <p className="text-xs text-center text-gray-400 font-medium">{statusMsg}</p>
+      <div className="pt-2 border-t border-gray-800 flex items-center justify-between">
+        <p className="text-xs text-gray-400 font-medium">{statusMsg}</p>
+        <button
+          onClick={() => { if (confirm('Quit this challenge?')) onQuit() }}
+          className="text-xs text-gray-600 hover:text-red-400 transition-colors"
+        >
+          Quit
+        </button>
       </div>
     </div>
   )

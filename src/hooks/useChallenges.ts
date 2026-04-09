@@ -126,6 +126,11 @@ export function useChallenges() {
     await fetchChallenges()
   }, [fetchChallenges])
 
+  const quitChallenge = useCallback(async (challengeId: string) => {
+    await supabase.from('challenges').delete().eq('id', challengeId)
+    await fetchChallenges()
+  }, [fetchChallenges])
+
   const hasPendingOrActive = useCallback((friendId: string) => {
     return [...activeChallenges, ...pendingSent, ...pendingIncoming].some(c =>
       c.challenger_id === friendId || c.challenged_id === friendId
@@ -134,7 +139,7 @@ export function useChallenges() {
 
   return {
     activeChallenges, pendingIncoming, pendingSent, loading,
-    createChallenge, acceptChallenge, declineChallenge, hasPendingOrActive,
+    createChallenge, acceptChallenge, declineChallenge, quitChallenge, hasPendingOrActive,
     refetch: fetchChallenges,
   }
 }
