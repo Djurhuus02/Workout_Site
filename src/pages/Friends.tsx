@@ -19,6 +19,7 @@ export default function Friends({ weeklyGoal }: Props) {
 
   const {
     activeChallenges, pendingIncoming: challengeRequests, pendingSent: challengesSent,
+    completedChallenges,
     createChallenge, acceptChallenge, declineChallenge, quitChallenge, hasPendingOrActive,
   } = useChallenges()
 
@@ -201,6 +202,46 @@ export default function Friends({ weeklyGoal }: Props) {
           </div>
         </div>
       )}
+
+      {/* ── Challenge win record ── */}
+      {completedChallenges.length > 0 && (() => {
+        // Build per-friend record
+        const records = new Map<string, { name: string; wins: number; losses: number; draws: number }>()
+        for (const c of completedChallenges) {
+          const friendId = c.challenger_id === user?.id ? c.challenged_id : c.challenger_id
+          const friendProfile = c.challenger_id === user?.id ? c.challenged : c.challenger
+          const name = friendProfile?.display_name ?? friendProfile?.username ?? 'Unknown'
+          const rec = records.get(friendId) ?? { name, wins: 0, losses: 0, draws: 0 }
+          if (c.winner_id === user?.id) rec.wins++
+          else if (c.winner_id === null) rec.draws++
+          else rec.losses++
+          records.set(friendId, rec)
+        }
+        const sorted = [...records.values()].sort((a, b) => b.wins - a.wins || a.losses - b.losses)
+        return (
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Hall of Fame</p>
+            <div className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
+              {sorted.map((r, i) => (
+                <div key={r.name} className={`flex items-center gap-3 px-4 py-3 ${i > 0 ? 'border-t border-gray-800' : ''}`}>
+                  <span className="text-sm font-bold w-5 text-center" style={{ color: i === 0 ? '#FBBF24' : i === 1 ? '#9CA3AF' : '#92400E' }}>
+                    {i + 1}
+                  </span>
+                  <div className="w-8 h-8 rounded-full bg-orange-500/20 flex items-center justify-center text-orange-400 font-bold text-sm flex-shrink-0">
+                    {r.name[0].toUpperCase()}
+                  </div>
+                  <span className="flex-1 text-sm text-white font-medium">{r.name}</span>
+                  <div className="flex items-center gap-3 text-xs font-semibold">
+                    <span className="text-green-400">{r.wins}W</span>
+                    <span className="text-red-400">{r.losses}L</span>
+                    {r.draws > 0 && <span className="text-gray-500">{r.draws}D</span>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
+      })()}
 
       {/* ── Sent pending challenges ── */}
       {challengesSent.length > 0 && (

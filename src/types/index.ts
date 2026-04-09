@@ -91,7 +91,8 @@ export interface Challenge {
   challenged_id: string
   goal: number
   week_start: string
-  status: 'active' | 'completed'
+  status: 'pending' | 'active' | 'completed'
+  winner_id: string | null
   created_at: string
   challenger?: Profile
   challenged?: Profile
