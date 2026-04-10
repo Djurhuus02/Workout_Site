@@ -18,8 +18,14 @@ export default function Settings({ onNavigate, theme, onThemeChange }: Props) {
   const handleDeleteAccount = async () => {
     if (!user) return
     setDeleting(true)
-    await supabase.from('workouts').delete().eq('user_id', user.id)
-    await supabase.from('user_settings').delete().eq('user_id', user.id)
+    await Promise.all([
+      supabase.from('workouts').delete().eq('user_id', user.id),
+      supabase.from('user_settings').delete().eq('user_id', user.id),
+      supabase.from('body_weight_logs').delete().eq('user_id', user.id),
+      supabase.from('friendships').delete().or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`),
+      supabase.from('challenges').delete().or(`challenger_id.eq.${user.id},challenged_id.eq.${user.id}`),
+      supabase.from('profiles').delete().eq('id', user.id),
+    ])
     await signOut()
   }
 
