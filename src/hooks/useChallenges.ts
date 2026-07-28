@@ -2,15 +2,16 @@ import { useState, useEffect, useCallback } from 'react'
 import { Challenge, Profile } from '../types'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
+import { getWeekStartDate } from '../utils/calculations'
 
 function getWeekStart(): string {
-  const now = new Date()
-  const day = now.getDay()
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1)
-  const monday = new Date(now)
-  monday.setDate(diff)
-  return monday.toISOString().split('T')[0]
+  return getWeekStartDate().toISOString().split('T')[0]
 }
+
+// Minimum wait after a decline/cancel before the same pair can be challenged again, to stop repeat-spamming a friend.
+const COOLDOWN_MS = 24 * 60 * 60 * 1000
+
+export type CreateChallengeResult = { ok: true } | { ok: false; reason: 'duplicate' | 'cooldown' | 'error' }
 
 export function useChallenges() {
   const { user } = useAuth()
@@ -18,6 +19,7 @@ export function useChallenges() {
   const [pendingIncoming, setPendingIncoming] = useState<Challenge[]>([])
   const [pendingSent, setPendingSent] = useState<Challenge[]>([])
   const [completedChallenges, setCompletedChallenges] = useState<Challenge[]>([])
+  const [recentInactive, setRecentInactive] = useState<Challenge[]>([])
   const [loading, setLoading] = useState(true)
 
   const fetchChallenges = useCallback(async () => {
@@ -61,6 +63,9 @@ export function useChallenges() {
       challenged: profileMap.get(c.challenged_id),
     }))
     setCompletedChallenges(enrichedCompleted)
+
+    // Declined/cancelled challenges are kept (not deleted) so we can enforce a re-challenge cooldown
+    setRecentInactive(data?.filter(c => c.status === 'declined' || c.status === 'cancelled') ?? [])
 
     if (!data || data.length === 0) {
       setActiveChallenges([]); setPendingIncoming([]); setPendingSent([])
@@ -119,14 +124,21 @@ export function useChallenges() {
 
   useEffect(() => { fetchChallenges() }, [fetchChallenges])
 
-  const createChallenge = useCallback(async (friendId: string, goal: number) => {
-    if (!user) return
-    const weekStart = getWeekStart()
+  const createChallenge = useCallback(async (friendId: string, goal: number): Promise<CreateChallengeResult> => {
+    if (!user) return { ok: false, reason: 'error' }
+
     const duplicate = [...activeChallenges, ...pendingSent, ...pendingIncoming].find(c =>
       (c.challenger_id === friendId || c.challenged_id === friendId)
     )
-    if (duplicate) return
+    if (duplicate) return { ok: false, reason: 'duplicate' }
 
+    const recentlyEnded = recentInactive.find(c =>
+      (c.challenger_id === friendId || c.challenged_id === friendId) &&
+      Date.now() - new Date(c.created_at).getTime() < COOLDOWN_MS
+    )
+    if (recentlyEnded) return { ok: false, reason: 'cooldown' }
+
+    const weekStart = getWeekStart()
     const { error } = await supabase.from('challenges').insert({
       challenger_id: user.id,
       challenged_id: friendId,
@@ -134,9 +146,10 @@ export function useChallenges() {
       week_start: weekStart,
       status: 'pending',
     })
-    if (error) console.error('createChallenge error:', error)
-    else await fetchChallenges()
-  }, [user, activeChallenges, pendingSent, pendingIncoming, fetchChallenges])
+    if (error) { console.error('createChallenge error:', error); return { ok: false, reason: 'error' } }
+    await fetchChallenges()
+    return { ok: true }
+  }, [user, activeChallenges, pendingSent, pendingIncoming, recentInactive, fetchChallenges])
 
   const acceptChallenge = useCallback(async (challengeId: string) => {
     const { error } = await supabase.from('challenges').update({ status: 'active' }).eq('id', challengeId)
@@ -144,13 +157,14 @@ export function useChallenges() {
     else await fetchChallenges()
   }, [fetchChallenges])
 
+  // Declined/cancelled challenges are soft-closed (not deleted) so createChallenge can enforce a cooldown
   const declineChallenge = useCallback(async (challengeId: string) => {
-    await supabase.from('challenges').delete().eq('id', challengeId)
+    await supabase.from('challenges').update({ status: 'declined' }).eq('id', challengeId)
     await fetchChallenges()
   }, [fetchChallenges])
 
   const quitChallenge = useCallback(async (challengeId: string) => {
-    await supabase.from('challenges').delete().eq('id', challengeId)
+    await supabase.from('challenges').update({ status: 'cancelled' }).eq('id', challengeId)
     await fetchChallenges()
   }, [fetchChallenges])
 

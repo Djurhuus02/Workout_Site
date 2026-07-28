@@ -1,5 +1,15 @@
 import { WorkoutSession, PersonalRecord } from '../types'
 
+/** Start of the current ISO week (Monday, local midnight). Shared so all weekly stats/features agree on one week boundary. */
+export function getWeekStartDate(date: Date = new Date()): Date {
+  const day = date.getDay()
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1)
+  const start = new Date(date)
+  start.setDate(diff)
+  start.setHours(0, 0, 0, 0)
+  return start
+}
+
 /** Epley formula for estimated 1RM */
 export function calculateOneRM(weight: number, reps: number): number {
   if (reps === 1) return weight

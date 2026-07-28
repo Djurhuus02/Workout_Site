@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { WorkoutSession, Page } from '../types'
 import WorkoutCard from '../components/WorkoutCard'
-import { totalVolume } from '../utils/calculations'
+import { totalVolume, getWeekStartDate } from '../utils/calculations'
 
 const TEMPLATES = [
   {
@@ -131,10 +131,7 @@ export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWork
     requestAnimationFrame(() => setMounted(true))
   }, [])
 
-  const today = new Date()
-  const weekStart = new Date(today)
-  weekStart.setDate(today.getDate() - today.getDay())
-  weekStart.setHours(0, 0, 0, 0)
+  const weekStart = getWeekStartDate()
 
   const thisWeek = workouts.filter(w => new Date(w.date) >= weekStart)
   const weekVolume = thisWeek.reduce((sum, w) => sum + totalVolume(w), 0)

@@ -31,6 +31,7 @@ export default function Friends({ weeklyGoal }: Props) {
   const [sendError, setSendError] = useState('')
   const [challengeModal, setChallengeModal] = useState<{ friendId: string; name: string } | null>(null)
   const [challengeGoal, setChallengeGoal] = useState(weeklyGoal || 3)
+  const [challengeError, setChallengeError] = useState('')
 
   const handleSearch = (q: string) => {
     setSearchQuery(q)
@@ -359,6 +360,7 @@ export default function Friends({ weeklyGoal }: Props) {
                       onClick={() => {
                         setChallengeModal({ friendId: fp.id, name: fp.display_name ?? fp.username ?? 'them' })
                         setChallengeGoal(weeklyGoal || 3)
+                        setChallengeError('')
                       }}
                       className="px-3 py-1.5 bg-orange-500/15 text-orange-400 text-xs font-semibold rounded-lg hover:bg-orange-500/25 transition-colors border border-orange-500/20"
                     >
@@ -391,11 +393,20 @@ export default function Friends({ weeklyGoal }: Props) {
                 <button onClick={() => setChallengeGoal(g => g + 1)} className="w-10 h-10 rounded-xl bg-gray-800 text-white text-xl flex items-center justify-center hover:bg-gray-700 transition-colors">+</button>
               </div>
             </div>
+            {challengeError && <p className="text-xs text-red-400 mb-3">{challengeError}</p>}
             <div className="flex gap-2">
               <button
                 onClick={async () => {
-                  await createChallenge(challengeModal.friendId, challengeGoal)
-                  setChallengeModal(null)
+                  const result = await createChallenge(challengeModal.friendId, challengeGoal)
+                  if (result.ok) {
+                    setChallengeModal(null)
+                  } else if (result.reason === 'cooldown') {
+                    setChallengeError(`You can re-challenge ${challengeModal.name} 24 hours after a decline or quit.`)
+                  } else if (result.reason === 'duplicate') {
+                    setChallengeError(`You already have a challenge with ${challengeModal.name}.`)
+                  } else {
+                    setChallengeError('Something went wrong sending that challenge. Try again.')
+                  }
                 }}
                 className="flex-1 py-3 bg-orange-500 text-white font-semibold rounded-xl hover:bg-orange-600 transition-colors"
               >
