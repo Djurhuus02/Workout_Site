@@ -1,14 +1,11 @@
 import { useState, useMemo } from 'react'
-import { WorkoutSession, BodyWeightLog, ExerciseCategory } from '../types'
-import { getPersonalRecords, getExerciseProgress, getCategoryVolumeByWeek } from '../utils/calculations'
-import { exercises, categoryHexColors, categoryLabels } from '../data/exercises'
+import { WorkoutSession, BodyWeightLog } from '../types'
+import { getPersonalRecords, getExerciseProgress } from '../utils/calculations'
+import { exercises } from '../data/exercises'
 import {
   ResponsiveContainer,
   LineChart,
   Line,
-  BarChart,
-  Bar,
-  Legend,
   XAxis,
   YAxis,
   Tooltip,
@@ -45,24 +42,6 @@ export default function Progress({ workouts, bodyWeightLogs, onAddBodyWeight, on
     selectedId ? getExerciseProgress(workouts, selectedId) : [],
     [workouts, selectedId]
   )
-
-  const exerciseCategoryMap = useMemo(
-    () => new Map(exercises.map(e => [e.id, e.category])),
-    []
-  )
-  const categoryVolumeData = useMemo(
-    () => getCategoryVolumeByWeek(workouts, exerciseCategoryMap, 8),
-    [workouts, exerciseCategoryMap]
-  )
-  const presentCategories = useMemo(() => {
-    const cats = new Set<ExerciseCategory>()
-    for (const point of categoryVolumeData) {
-      for (const key of Object.keys(point)) {
-        if (key !== 'label' && key !== 'rawDate') cats.add(key as ExerciseCategory)
-      }
-    }
-    return [...cats]
-  }, [categoryVolumeData])
 
   const selectedPR = selectedId ? prs.get(selectedId) : null
   const selectedExercise = selectedId ? exercises.find(e => e.id === selectedId) : null
@@ -174,34 +153,6 @@ export default function Progress({ workouts, bodyWeightLogs, onAddBodyWeight, on
           </div>
         )}
       </div>
-
-      {/* Muscle-group volume balance */}
-      {presentCategories.length > 0 && (
-        <div className="mb-6">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Muscle Balance</p>
-          <div className="bg-gray-900 rounded-xl p-4 border border-gray-800 mb-4">
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={categoryVolumeData} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
-                <Tooltip
-                  contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: 8, fontSize: 12 }}
-                  labelStyle={{ color: '#d1d5db' }}
-                  formatter={(val: number, name: string) => [`${val} kg`, categoryLabels[name] ?? name]}
-                />
-                <Legend
-                  formatter={(name: string) => categoryLabels[name] ?? name}
-                  wrapperStyle={{ fontSize: 11 }}
-                />
-                {presentCategories.map(category => (
-                  <Bar key={category} dataKey={category} stackId="volume" fill={categoryHexColors[category]} />
-                ))}
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
 
       {/* Exercise selector */}
       <div className="mb-4">

@@ -1,4 +1,4 @@
-import { Exercise, ExerciseCategory } from '../types'
+import { Exercise } from '../types'
 
 export const exercises: Exercise[] = [
   // ─── CHEST ────────────────────────────────────────────────────────────────
@@ -173,17 +173,4 @@ export const categoryColors: Record<string, string> = {
   core: 'bg-pink-500/20 text-pink-400',
   olympic: 'bg-cyan-500/20 text-cyan-400',
   full_body: 'bg-gray-500/20 text-gray-400',
-}
-
-/** Raw hex equivalents of categoryColors, for Recharts fill/stroke (which can't consume Tailwind classes) */
-export const categoryHexColors: Record<ExerciseCategory, string> = {
-  chest: '#ef4444',
-  back: '#3b82f6',
-  legs: '#22c55e',
-  shoulders: '#a855f7',
-  biceps: '#eab308',
-  triceps: '#f97316',
-  core: '#ec4899',
-  olympic: '#06b6d4',
-  full_body: '#6b7280',
 }

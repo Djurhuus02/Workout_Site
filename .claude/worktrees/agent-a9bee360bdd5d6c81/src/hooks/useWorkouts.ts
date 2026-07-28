@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { WorkoutSession } from '../types'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { loadQueue, saveQueue, enqueueInsert, enqueueDelete, enqueueFavoriteToggle, reconcileWithQueue } from '../lib/offlineQueue'
 
 function isUuid(value: string) {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
@@ -17,61 +16,10 @@ function ensureWorkoutId(workout: WorkoutSession): WorkoutSession {
   }
 }
 
-interface PostgrestLikeError {
-  code?: string
-  message?: string
-}
-
-/** A genuine Postgres/RLS error has a `.code`; a network drop doesn't, and reads as offline or a fetch failure */
-function isNetworkFailure(error: PostgrestLikeError | null): boolean {
-  if (!navigator.onLine) return true
-  if (!error || error.code) return false
-  const message = error.message?.toLowerCase() ?? ''
-  return message.includes('fetch') || message.includes('network') || message.includes('load failed')
-}
-
 export function useWorkouts() {
   const [workouts, setWorkouts] = useState<WorkoutSession[]>([])
   const [loading, setLoading] = useState(true)
   const { user } = useAuth()
-
-  const flushQueue = useCallback(async () => {
-    if (!user) return
-    const queue = loadQueue()
-    let processedCount = 0
-
-    for (const mutation of queue) {
-      let error: PostgrestLikeError | null = null
-
-      if (mutation.type === 'insert_workout') {
-        const res = await supabase.from('workouts').insert({
-          id: mutation.id,
-          user_id: mutation.userId,
-          data: mutation.payload,
-        })
-        error = res.error
-        // Unique-violation means this row already made it to the server on an earlier attempt — treat as success
-        if (error?.code === '23505') error = null
-      } else if (mutation.type === 'delete_workout') {
-        const res = await supabase.from('workouts').delete().eq('id', mutation.id).eq('user_id', mutation.userId)
-        error = res.error
-      } else {
-        const res = await supabase
-          .from('workouts')
-          .update({ favorited: mutation.favorited })
-          .eq('id', mutation.id)
-          .eq('user_id', mutation.userId)
-        error = res.error
-      }
-
-      if (error) break
-      processedCount++
-    }
-
-    if (processedCount > 0) {
-      saveQueue(queue.slice(processedCount))
-    }
-  }, [user])
 
   useEffect(() => {
     if (!user) {
@@ -92,8 +40,7 @@ export function useWorkouts() {
       if (error) {
         console.error('Error fetching workouts:', error)
       } else if (data) {
-        const serverWorkouts = data.map(row => ({ ...(row.data as WorkoutSession), id: row.id, favorited: row.favorited ?? false }))
-        setWorkouts(reconcileWithQueue(serverWorkouts, loadQueue()))
+        setWorkouts(data.map(row => ({ ...(row.data as WorkoutSession), id: row.id, favorited: row.favorited ?? false })))
       }
 
       setLoading(false)
@@ -101,13 +48,6 @@ export function useWorkouts() {
 
     fetchWorkouts()
   }, [user])
-
-  useEffect(() => {
-    if (!user) return
-    flushQueue()
-    window.addEventListener('online', flushQueue)
-    return () => window.removeEventListener('online', flushQueue)
-  }, [user, flushQueue])
 
   const addWorkout = useCallback(async (workout: WorkoutSession) => {
     if (!user) return
@@ -125,10 +65,6 @@ export function useWorkouts() {
       })
 
     if (error) {
-      if (isNetworkFailure(error)) {
-        enqueueInsert(workoutToSave.id, workoutToSave, user.id)
-        return
-      }
       console.error('Error saving workout:', error)
       setWorkouts(prev => prev.filter(w => w.id !== workoutToSave.id))
     }
@@ -147,10 +83,6 @@ export function useWorkouts() {
       .eq('user_id', user.id)
 
     if (error) {
-      if (isNetworkFailure(error)) {
-        enqueueDelete(id, user.id)
-        return
-      }
       console.error('Error deleting workout:', error)
       setWorkouts(previous)
     }
@@ -172,10 +104,6 @@ export function useWorkouts() {
       .eq('user_id', user.id)
 
     if (error) {
-      if (isNetworkFailure(error)) {
-        enqueueFavoriteToggle(id, newValue, user.id)
-        return
-      }
       console.error('Error toggling favorite:', error)
       setWorkouts(prev => prev.map(w => w.id === id ? { ...w, favorited: !newValue } : w))
     }

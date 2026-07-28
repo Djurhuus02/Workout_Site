@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    background-color: #0a0a0a;
+    color: white;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html.light-mode {
+    filter: invert(1) hue-rotate(180deg);
+  }
+
+  html.light-mode img {
+    filter: invert(1) hue-rotate(180deg);
+  }
+
+  html.light-mode .no-invert {
+    filter: invert(1) hue-rotate(180deg);
+    display: inline-block;
+  }
+
+  body {
+    background-color: #0a0a0a;
+    overscroll-behavior: none;
+  }
+
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+
+  * {
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* iOS ignores the manifest orientation lock, so enforce portrait-only with CSS.
+   max-height targets phones in landscape (their height shrinks below this); tablets/desktop stay unaffected. */
+#orientation-lock {
+  display: none;
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  #orientation-lock {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: #0a0a0a;
+    color: white;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2rem;
+  }
+
+  #root {
+    display: none;
+  }
+}

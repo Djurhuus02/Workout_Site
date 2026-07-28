@@ -5,10 +5,8 @@ import { useActiveWorkout } from './hooks/useActiveWorkout'
 import { useUserSettings } from './hooks/useUserSettings'
 import { useBodyWeight } from './hooks/useBodyWeight'
 import { useNotifications } from './hooks/useNotifications'
-import { useAchievements } from './hooks/useAchievements'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Navigation from './components/Navigation'
-import AchievementToast from './components/AchievementToast'
 import Dashboard from './pages/Dashboard'
 import ActiveWorkout from './pages/ActiveWorkout'
 import History from './pages/History'
@@ -29,7 +27,6 @@ function AppContent() {
   const settingsHook = useUserSettings()
   const bodyWeightHook = useBodyWeight()
   const notificationCount = useNotifications()
-  const { achievements, unlockedIds, justUnlocked, dismissJustUnlocked } = useAchievements(workoutsHook.workouts)
 
   useEffect(() => {
     localStorage.setItem('theme', theme)
@@ -116,20 +113,13 @@ function AppContent() {
           />
         )}
         {page === 'settings' && (
-          <Settings
-            onNavigate={setPage}
-            theme={theme}
-            onThemeChange={setTheme}
-            achievements={achievements}
-            unlockedIds={unlockedIds}
-          />
+          <Settings onNavigate={setPage} theme={theme} onThemeChange={setTheme} />
         )}
         {page === 'friends' && (
           <Friends weeklyGoal={settingsHook.weeklyGoal ?? 3} />
         )}
       </div>
       <Navigation current={page} onChange={setPage} hasActive={activeHook.isActive} friendNotifications={notificationCount} />
-      <AchievementToast justUnlocked={justUnlocked} onDismiss={dismissJustUnlocked} />
     </div>
   )
 }

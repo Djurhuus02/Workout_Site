@@ -2,17 +2,14 @@ import { useState } from 'react'
 import { Page } from '../types'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { Achievement } from '../data/achievements'
 
 interface Props {
   onNavigate: (page: Page) => void
   theme: 'dark' | 'light'
   onThemeChange: (theme: 'dark' | 'light') => void
-  achievements: Achievement[]
-  unlockedIds: Set<string>
 }
 
-export default function Settings({ onNavigate, theme, onThemeChange, achievements, unlockedIds }: Props) {
+export default function Settings({ onNavigate, theme, onThemeChange }: Props) {
   const { user, signOut } = useAuth()
   const [signOutConfirm, setSignOutConfirm] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState(false)
@@ -205,44 +202,6 @@ export default function Settings({ onNavigate, theme, onThemeChange, achievement
                 </p>
               </div>
             </button>
-          </div>
-        </section>
-
-        {/* Achievements */}
-        <section>
-          <p style={{ margin: '0 0 12px', fontSize: 11, color: 'rgba(255,255,255,0.35)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 500 }}>
-            Achievements ({unlockedIds.size}/{achievements.length})
-          </p>
-          <div style={{
-            background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)',
-            borderRadius: 14, padding: '16px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10,
-          }}>
-            {achievements.map(a => {
-              const unlocked = unlockedIds.has(a.id)
-              return (
-                <div
-                  key={a.id}
-                  title={`${a.name} — ${a.description}`}
-                  style={{
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
-                    opacity: unlocked ? 1 : 0.3,
-                  }}
-                >
-                  <div style={{
-                    width: 44, height: 44, borderRadius: 12,
-                    background: unlocked ? 'rgba(168,85,247,0.12)' : 'rgba(255,255,255,0.04)',
-                    border: unlocked ? '1px solid rgba(168,85,247,0.3)' : '1px solid rgba(255,255,255,0.06)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20,
-                  }}>
-                    <span className="no-invert">{a.icon}</span>
-                  </div>
-                  <p style={{
-                    margin: 0, fontSize: 10, color: 'rgba(255,255,255,0.5)',
-                    textAlign: 'center', lineHeight: 1.2,
-                  }}>{a.name}</p>
-                </div>
-              )
-            })}
           </div>
         </section>
 

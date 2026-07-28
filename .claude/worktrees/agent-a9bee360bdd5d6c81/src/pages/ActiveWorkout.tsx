@@ -4,32 +4,11 @@ import ExercisePicker from '../components/ExercisePicker'
 import SetRow from '../components/SetRow'
 import ExerciseImageModal from '../components/ExerciseImageModal'
 import { Exercise, WorkoutExercise, WorkoutSet, WorkoutSession } from '../types'
-import { formatDuration, getPersonalRecords, calculateOneRM, suggestNextSet } from '../utils/calculations'
+import { formatDuration, getPersonalRecords, calculateOneRM } from '../utils/calculations'
 import { exercises as exerciseList } from '../data/exercises'
 import { exerciseImageMap } from '../data/exerciseImages'
 
 const REST_PRESETS = [60, 90, 120, 180]
-
-function playRestDoneBeep() {
-  const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-  if (!Ctx) return
-  const ctx = new Ctx()
-  const osc = ctx.createOscillator()
-  const gain = ctx.createGain()
-  osc.connect(gain)
-  gain.connect(ctx.destination)
-  osc.frequency.value = 880
-  gain.gain.setValueAtTime(0.15, ctx.currentTime)
-  osc.start()
-  osc.stop(ctx.currentTime + 0.15)
-  setTimeout(() => ctx.close(), 300)
-}
-
-function notifyRestDone() {
-  if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
-    new Notification('Rest complete', { body: 'Time to get back to it 💪', icon: '/icon-192.png' })
-  }
-}
 
 interface ActiveWorkoutData {
   id: string
@@ -125,8 +104,6 @@ export default function ActiveWorkout({
         if (prev <= 1) {
           clearInterval(restRef.current!)
           navigator.vibrate?.([200, 100, 200])
-          playRestDoneBeep()
-          notifyRestDone()
           return 0
         }
         return prev - 1
@@ -141,9 +118,6 @@ export default function ActiveWorkout({
   }
 
   const handleSetCompleted = (entryId: string, setId: string, exerciseId: string, weight: number, reps: number) => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission()
-    }
     if (weight <= 0 || reps <= 0) return
     const currentOneRM = calculateOneRM(weight, reps)
     const savedBest = savedPRs.get(exerciseId)?.estimatedOneRM ?? 0
@@ -329,7 +303,6 @@ export default function ActiveWorkout({
                     {entry.sets.map((set, i) => {
                       const prevSet = lastExercise?.sets[i] ?? null
                       const isPR = prSets.has(`${entry.id}-${set.id}`)
-                      const suggestion = prevSet ? suggestNextSet({ weight: prevSet.weight, reps: prevSet.reps }) : null
                       return (
                         <SetRow
                           key={set.id}
@@ -342,7 +315,6 @@ export default function ActiveWorkout({
                           bodyWeightKg={bodyWeightKg}
                           isPR={isPR}
                           onCompleted={() => handleSetCompleted(entry.id, set.id, entry.exerciseId, set.weight, set.reps)}
-                          suggestion={suggestion}
                         />
                       )
                     })}

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { WorkoutSession, Page } from '../types'
 import WorkoutCard from '../components/WorkoutCard'
-import ConsistencyHeatmap from '../components/ConsistencyHeatmap'
 import { totalVolume, getWeekStartDate } from '../utils/calculations'
 
 const TEMPLATES = [
@@ -281,17 +280,6 @@ export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWork
             </p>
           )}
         </div>
-      </div>
-
-      {/* Consistency heatmap */}
-      <div style={{
-        padding: '16px 24px 0',
-        opacity: mounted ? 1 : 0,
-        transform: mounted ? 'translateY(0)' : 'translateY(15px)',
-        transition: transition(0.18),
-        position: 'relative', zIndex: 1,
-      }}>
-        <ConsistencyHeatmap workouts={workouts} />
       </div>
 
       {/* CTA Button */}

@@ -1,4 +1,4 @@
-import { WorkoutSession, PersonalRecord } from '../types'
+import { WorkoutSession, PersonalRecord, ExerciseCategory } from '../types'
 
 /** Start of the current ISO week (Monday, local midnight). Shared so all weekly stats/features agree on one week boundary. */
 export function getWeekStartDate(date: Date = new Date()): Date {
@@ -96,4 +96,105 @@ export function formatDuration(seconds: number): string {
 
 export function formatWeight(kg: number): string {
   return `${kg} kg`
+}
+
+export function toDateKey(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+}
+
+/** Set of local 'YYYY-MM-DD' date keys on which at least one workout was logged */
+export function getWorkoutDateSet(workouts: WorkoutSession[]): Set<string> {
+  return new Set(workouts.map(w => toDateKey(new Date(w.date))))
+}
+
+/** Consecutive-day streak ending today or yesterday (a streak isn't broken until a full day is missed) */
+export function getCurrentStreak(workouts: WorkoutSession[]): number {
+  const dates = getWorkoutDateSet(workouts)
+  if (dates.size === 0) return 0
+
+  const cursor = new Date()
+  cursor.setHours(0, 0, 0, 0)
+  if (!dates.has(toDateKey(cursor))) {
+    cursor.setDate(cursor.getDate() - 1)
+    if (!dates.has(toDateKey(cursor))) return 0
+  }
+
+  let streak = 0
+  while (dates.has(toDateKey(cursor))) {
+    streak++
+    cursor.setDate(cursor.getDate() - 1)
+  }
+  return streak
+}
+
+/** Longest-ever run of consecutive workout days */
+export function getLongestStreak(workouts: WorkoutSession[]): number {
+  const dates = getWorkoutDateSet(workouts)
+  if (dates.size === 0) return 0
+
+  const sortedDays = [...dates].sort().map(key => new Date(key).getTime())
+  let longest = 1
+  let current = 1
+  for (let i = 1; i < sortedDays.length; i++) {
+    const diffDays = Math.round((sortedDays[i] - sortedDays[i - 1]) / 86400000)
+    current = diffDays === 1 ? current + 1 : 1
+    longest = Math.max(longest, current)
+  }
+  return longest
+}
+
+export interface OverloadSuggestion {
+  weight: number
+  reps: number
+  reason: 'increase_weight' | 'increase_reps'
+}
+
+/** Simple double-progression heuristic: add a rep until a threshold, then trade reps for a small weight jump */
+export function suggestNextSet(previous: { weight: number; reps: number } | null): OverloadSuggestion | null {
+  if (!previous || previous.weight <= 0 || previous.reps <= 0) return null
+
+  if (previous.reps >= 10) {
+    return { weight: previous.weight + 2.5, reps: previous.reps - 2, reason: 'increase_weight' }
+  }
+  return { weight: previous.weight, reps: previous.reps + 1, reason: 'increase_reps' }
+}
+
+export interface CategoryVolumePoint {
+  label: string
+  rawDate: string
+  [category: string]: number | string
+}
+
+/** Completed-set volume aggregated by ISO week and exercise category, for the muscle-group balance chart */
+export function getCategoryVolumeByWeek(
+  workouts: WorkoutSession[],
+  exerciseCategoryMap: Map<string, ExerciseCategory>,
+  weeks: number = 8
+): CategoryVolumePoint[] {
+  const buckets = new Map<string, CategoryVolumePoint>()
+
+  for (const workout of workouts) {
+    const weekStart = getWeekStartDate(new Date(workout.date))
+    const key = toDateKey(weekStart)
+    let bucket = buckets.get(key)
+    if (!bucket) {
+      bucket = {
+        label: weekStart.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+        rawDate: key,
+      }
+      buckets.set(key, bucket)
+    }
+
+    for (const exercise of workout.exercises) {
+      const category = exerciseCategoryMap.get(exercise.exerciseId)
+      if (!category) continue
+      const volume = exercise.sets.reduce((sum, s) => (s.completed ? sum + s.weight * s.reps : sum), 0)
+      if (volume <= 0) continue
+      bucket[category] = ((bucket[category] as number) ?? 0) + volume
+    }
+  }
+
+  return [...buckets.values()]
+    .sort((a, b) => a.rawDate.localeCompare(b.rawDate))
+    .slice(-weeks)
 }
