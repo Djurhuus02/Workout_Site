@@ -29,7 +29,7 @@ function AppContent() {
   const settingsHook = useUserSettings()
   const bodyWeightHook = useBodyWeight()
   const notificationCount = useNotifications()
-  const { achievements, unlockedIds, justUnlocked, dismissJustUnlocked } = useAchievements(workoutsHook.workouts)
+  const { achievements, unlockedIds, justUnlocked, dismissJustUnlocked } = useAchievements(workoutsHook.workouts, workoutsHook.loading)
 
   useEffect(() => {
     localStorage.setItem('theme', theme)

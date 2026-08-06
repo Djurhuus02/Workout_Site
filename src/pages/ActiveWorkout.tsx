@@ -9,25 +9,36 @@ import { exercises as exerciseList } from '../data/exercises'
 import { exerciseImageMap } from '../data/exerciseImages'
 
 const REST_PRESETS = [60, 90, 120, 180]
+const NOTIF_PROMPT_DISMISSED_KEY = 'restNotifPromptDismissed'
 
-function playRestDoneBeep() {
-  const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-  if (!Ctx) return
-  const ctx = new Ctx()
-  const osc = ctx.createOscillator()
-  const gain = ctx.createGain()
-  osc.connect(gain)
-  gain.connect(ctx.destination)
-  osc.frequency.value = 880
-  gain.gain.setValueAtTime(0.15, ctx.currentTime)
-  osc.start()
-  osc.stop(ctx.currentTime + 0.15)
-  setTimeout(() => ctx.close(), 300)
+function playRestDoneBeep(ctx: AudioContext) {
+  // Short ascending three-note chime (E5-G5-B5) instead of a single flat tone
+  const notes = [659.25, 783.99, 987.77]
+  const noteDuration = 0.16
+  const gap = 0.1
+
+  notes.forEach((freq, i) => {
+    const startTime = ctx.currentTime + i * gap
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.type = 'sine'
+    osc.frequency.value = freq
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+
+    // Quick attack, smooth decay — avoids the click a hard on/off would cause
+    gain.gain.setValueAtTime(0, startTime)
+    gain.gain.linearRampToValueAtTime(0.2, startTime + 0.015)
+    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + noteDuration)
+
+    osc.start(startTime)
+    osc.stop(startTime + noteDuration + 0.02)
+  })
 }
 
 function notifyRestDone() {
   if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
-    new Notification('Rest complete', { body: 'Time to get back to it 💪', icon: '/icon-192.png' })
+    new Notification('Rest complete', { body: "Let's get the next set! 💪", icon: '/icon-192.png' })
   }
 }
 
@@ -89,6 +100,17 @@ export default function ActiveWorkout({
   const [restRemaining, setRestRemaining] = useState(0)
   const [restTotal, setRestTotal] = useState(90)
   const restRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const audioCtxRef = useRef<AudioContext | null>(null)
+  const [restJustFinished, setRestJustFinished] = useState(false)
+  const restDoneTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Rest timer notification opt-in
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission | 'unsupported'>(
+    'Notification' in window ? Notification.permission : 'unsupported'
+  )
+  const [notifPromptDismissed, setNotifPromptDismissed] = useState(
+    () => localStorage.getItem(NOTIF_PROMPT_DISMISSED_KEY) === '1'
+  )
 
   // Compute saved PRs (excluding current in-progress workout)
   const savedPRs = useMemo(
@@ -105,6 +127,14 @@ export default function ActiveWorkout({
     return () => clearInterval(interval)
   }, [active])
 
+  // Clear any pending rest-timer work on unmount (e.g. navigating away mid-rest)
+  useEffect(() => {
+    return () => {
+      if (restRef.current) clearInterval(restRef.current)
+      if (restDoneTimeoutRef.current) clearTimeout(restDoneTimeoutRef.current)
+    }
+  }, [])
+
   // Rest timer countdown
   useEffect(() => {
     if (restRemaining <= 0) {
@@ -118,6 +148,18 @@ export default function ActiveWorkout({
 
   const startRest = (seconds: number) => {
     if (restRef.current) clearInterval(restRef.current)
+    if (restDoneTimeoutRef.current) clearTimeout(restDoneTimeoutRef.current)
+    setRestJustFinished(false)
+
+    // Create/resume the AudioContext now, inside this click handler, so it's
+    // unlocked by a real user gesture — browsers block audio started later
+    // from a setInterval callback if the context was never unlocked this way.
+    const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    if (Ctx) {
+      if (!audioCtxRef.current) audioCtxRef.current = new Ctx()
+      if (audioCtxRef.current.state === 'suspended') audioCtxRef.current.resume()
+    }
+
     setRestTotal(seconds)
     setRestRemaining(seconds)
     restRef.current = setInterval(() => {
@@ -125,8 +167,10 @@ export default function ActiveWorkout({
         if (prev <= 1) {
           clearInterval(restRef.current!)
           navigator.vibrate?.([200, 100, 200])
-          playRestDoneBeep()
+          if (audioCtxRef.current) playRestDoneBeep(audioCtxRef.current)
           notifyRestDone()
+          setRestJustFinished(true)
+          restDoneTimeoutRef.current = setTimeout(() => setRestJustFinished(false), 4000)
           return 0
         }
         return prev - 1
@@ -136,14 +180,24 @@ export default function ActiveWorkout({
 
   const stopRest = () => {
     if (restRef.current) clearInterval(restRef.current)
+    if (restDoneTimeoutRef.current) clearTimeout(restDoneTimeoutRef.current)
     setRestRemaining(0)
     setRestTotal(0)
+    setRestJustFinished(false)
+  }
+
+  const requestNotifPermission = async () => {
+    if (!('Notification' in window)) return
+    const result = await Notification.requestPermission()
+    setNotifPermission(result)
+  }
+
+  const dismissNotifPrompt = () => {
+    setNotifPromptDismissed(true)
+    localStorage.setItem(NOTIF_PROMPT_DISMISSED_KEY, '1')
   }
 
   const handleSetCompleted = (entryId: string, setId: string, exerciseId: string, weight: number, reps: number) => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission()
-    }
     if (weight <= 0 || reps <= 0) return
     const currentOneRM = calculateOneRM(weight, reps)
     const savedBest = savedPRs.get(exerciseId)?.estimatedOneRM ?? 0
@@ -385,7 +439,7 @@ export default function ActiveWorkout({
       </div>
 
       {/* Rest timer — floating pill above nav */}
-      {restRemaining > 0 && (
+      {(restRemaining > 0 || restJustFinished) && (
         <div style={{
           position: 'fixed', bottom: 'calc(4.5rem + env(safe-area-inset-bottom) + 12px)',
           left: '50%', transform: 'translateX(-50%)',
@@ -394,45 +448,100 @@ export default function ActiveWorkout({
           borderRadius: 16, padding: '12px 16px', zIndex: 90,
           boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
         }}>
-          {/* Progress bar */}
-          <div style={{ height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 2, marginBottom: 10, overflow: 'hidden' }}>
+          {/* Notification permission prompt */}
+          {notifPermission === 'default' && !notifPromptDismissed && (
             <div style={{
-              height: '100%', borderRadius: 2,
-              background: restRemaining <= 10 ? '#ef4444' : '#F97316',
-              width: `${restProgress * 100}%`,
-              transition: 'width 1s linear, background 0.3s',
-            }} />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div>
-              <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 2 }}>Rest</p>
-              <p style={{ margin: 0, fontSize: 22, fontWeight: 700, color: restRemaining <= 10 ? '#ef4444' : 'white', fontVariantNumeric: 'tabular-nums' }}>
-                {Math.floor(restRemaining / 60)}:{String(restRemaining % 60).padStart(2, '0')}
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8,
+              marginBottom: 10, padding: '8px 10px',
+              background: 'rgba(249,115,22,0.1)', border: '1px solid rgba(249,115,22,0.25)',
+              borderRadius: 10,
+            }}>
+              <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.75)' }}>
+                Get notified when rest is over
               </p>
-            </div>
-            <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-              {REST_PRESETS.map(s => (
-                <button key={s} onClick={() => startRest(s)} style={{
-                  padding: '4px 8px', borderRadius: 8, fontSize: 11, fontWeight: 600,
-                  background: restTotal === s ? 'rgba(249,115,22,0.2)' : 'rgba(255,255,255,0.06)',
-                  color: restTotal === s ? '#F97316' : 'rgba(255,255,255,0.5)',
-                  border: restTotal === s ? '1px solid rgba(249,115,22,0.4)' : '1px solid transparent',
-                  cursor: 'pointer',
+              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                <button onClick={requestNotifPermission} style={{
+                  padding: '4px 10px', borderRadius: 8, fontSize: 11, fontWeight: 600,
+                  background: '#F97316', color: 'white', border: 'none', cursor: 'pointer',
                 }}>
-                  {s < 60 ? `${s}s` : s % 60 === 0 ? `${s / 60}m` : `${Math.floor(s / 60)}m${s % 60}s`}
+                  Enable
                 </button>
-              ))}
+                <button onClick={dismissNotifPrompt} style={{
+                  padding: '4px 8px', borderRadius: 8, fontSize: 11,
+                  background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.5)',
+                  border: 'none', cursor: 'pointer',
+                }}>
+                  Not now
+                </button>
+              </div>
+            </div>
+          )}
+          {restJustFinished ? (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 24 }} className="no-invert">💪</span>
+                <div>
+                  <p style={{ margin: 0, fontSize: 11, color: '#22c55e', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>
+                    Rest complete
+                  </p>
+                  <p style={{ margin: '2px 0 0', fontSize: 16, fontWeight: 700, color: 'white' }}>
+                    Let's get the next set!
+                  </p>
+                </div>
+              </div>
               <button onClick={stopRest} style={{
                 width: 28, height: 28, borderRadius: '50%', border: 'none',
                 background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)',
-                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
               }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" width={12} height={12}>
                   <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
                 </svg>
               </button>
             </div>
-          </div>
+          ) : (
+            <>
+              {/* Progress bar */}
+              <div style={{ height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 2, marginBottom: 10, overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', borderRadius: 2,
+                  background: restRemaining <= 10 ? '#ef4444' : '#F97316',
+                  width: `${restProgress * 100}%`,
+                  transition: 'width 1s linear, background 0.3s',
+                }} />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div>
+                  <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.4)', marginBottom: 2 }}>Rest</p>
+                  <p style={{ margin: 0, fontSize: 22, fontWeight: 700, color: restRemaining <= 10 ? '#ef4444' : 'white', fontVariantNumeric: 'tabular-nums' }}>
+                    {Math.floor(restRemaining / 60)}:{String(restRemaining % 60).padStart(2, '0')}
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                  {REST_PRESETS.map(s => (
+                    <button key={s} onClick={() => startRest(s)} style={{
+                      padding: '4px 8px', borderRadius: 8, fontSize: 11, fontWeight: 600,
+                      background: restTotal === s ? 'rgba(249,115,22,0.2)' : 'rgba(255,255,255,0.06)',
+                      color: restTotal === s ? '#F97316' : 'rgba(255,255,255,0.5)',
+                      border: restTotal === s ? '1px solid rgba(249,115,22,0.4)' : '1px solid transparent',
+                      cursor: 'pointer',
+                    }}>
+                      {s < 60 ? `${s}s` : s % 60 === 0 ? `${s / 60}m` : `${Math.floor(s / 60)}m${s % 60}s`}
+                    </button>
+                  ))}
+                  <button onClick={stopRest} style={{
+                    width: 28, height: 28, borderRadius: '50%', border: 'none',
+                    background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.4)',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" width={12} height={12}>
+                      <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 
