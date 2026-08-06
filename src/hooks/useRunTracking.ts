@@ -6,6 +6,10 @@ const STORAGE_KEY = 'lift_tracker_active_run'
 // lock often report 50-100m+ accuracy. The point is filtering out wild outliers,
 // not demanding phone-GPS precision.
 const MAX_ACCEPTABLE_ACCURACY_M = 75
+// GPS fixes normally land every few seconds (maximumAge: 2000 below). A silence longer
+// than this means something interrupted tracking — most commonly the tab being
+// backgrounded (switching apps, screen lock), which mobile browsers suspend JS for.
+const GAP_THRESHOLD_MS = 20_000
 
 interface RunDraft {
   route: RoutePoint[]
@@ -31,9 +35,11 @@ export function useRunTracking() {
   const [elapsedSeconds, setElapsedSeconds] = useState(() => loadDraft()?.elapsedSeconds ?? 0)
   const [startedAt, setStartedAt] = useState<number | null>(() => loadDraft()?.startedAt ?? null)
   const [error, setError] = useState<string | null>(null)
+  const [lastGapSeconds, setLastGapSeconds] = useState<number | null>(null)
 
   const watchIdRef = useRef<number | null>(null)
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null)
   // Wall-clock time the current tracking segment resumed, and how much elapsed time
   // was already banked before it — lets pause/resume behave like a stopwatch, not a
   // single continuous watchPosition subscription (which we tear down on pause to save battery).
@@ -93,12 +99,42 @@ export function useRunTracking() {
     }
   }
 
+  // Keeps the screen from auto-locking during a run — doesn't help if you switch to
+  // another app (nothing can prevent that from a web page), but stops the far more
+  // common "phone screen just timed out in my pocket" case from causing a tracking gap.
+  const acquireWakeLock = async () => {
+    if (!('wakeLock' in navigator)) return
+    try {
+      wakeLockRef.current = await navigator.wakeLock.request('screen')
+    } catch {
+      // Not fatal — e.g. low battery mode can reject this. Tracking still works.
+    }
+  }
+
+  const releaseWakeLock = () => {
+    wakeLockRef.current?.release().catch(() => {})
+    wakeLockRef.current = null
+  }
+
+  // The wake lock is auto-released by the browser whenever the tab is hidden, so it
+  // needs re-requesting when it becomes visible again if a run is still in progress.
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && statusRef.current === 'tracking') {
+        acquireWakeLock()
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange)
+  }, [])
+
   const start = useCallback(() => {
     if (!('geolocation' in navigator)) {
       setError('Geolocation is not supported on this device.')
       return
     }
     setError(null)
+    acquireWakeLock()
     baseElapsedRef.current = elapsedSeconds
     segmentStartRef.current = Date.now()
     setStartedAt(prev => prev ?? Date.now())
@@ -122,10 +158,16 @@ export function useRunTracking() {
           if (prev.length > 0 && pos.coords.accuracy && pos.coords.accuracy > MAX_ACCEPTABLE_ACCURACY_M) {
             return prev
           }
+          const t = baseElapsedRef.current * 1000 + (Date.now() - segmentStartRef.current)
+          const previous = prev[prev.length - 1]
+          const gapMs = previous ? t - previous.t : 0
+          if (gapMs > GAP_THRESHOLD_MS) setLastGapSeconds(Math.round(gapMs / 1000))
+
           return [...prev, {
             lat: pos.coords.latitude,
             lng: pos.coords.longitude,
-            t: baseElapsedRef.current * 1000 + (Date.now() - segmentStartRef.current),
+            t,
+            gapBefore: gapMs > GAP_THRESHOLD_MS,
           }]
         })
       },
@@ -142,31 +184,44 @@ export function useRunTracking() {
     setElapsedSeconds(finalElapsed)
     elapsedSecondsRef.current = finalElapsed
     clearWatch()
+    releaseWakeLock()
     setStatus('paused')
   }, [])
 
   const finish = useCallback(() => {
     clearWatch()
+    releaseWakeLock()
     const result = { route, durationSeconds: elapsedSeconds, startedAt }
     setStatus('idle')
     setRoute([])
     setElapsedSeconds(0)
     setStartedAt(null)
+    setLastGapSeconds(null)
     localStorage.removeItem(STORAGE_KEY)
     return result
   }, [route, elapsedSeconds, startedAt])
 
   const discard = useCallback(() => {
     clearWatch()
+    releaseWakeLock()
     setStatus('idle')
     setRoute([])
     setElapsedSeconds(0)
     setStartedAt(null)
+    setLastGapSeconds(null)
     localStorage.removeItem(STORAGE_KEY)
   }, [])
 
-  // Tear down any live subscription if the component unmounts mid-run (e.g. navigating away)
-  useEffect(() => () => clearWatch(), [])
+  const dismissGap = useCallback(() => setLastGapSeconds(null), [])
 
-  return { status, route, elapsedSeconds, error, start, resume: start, pause, finish, discard }
+  // Tear down any live subscription/wake lock if the component unmounts mid-run (e.g. navigating away)
+  useEffect(() => () => {
+    clearWatch()
+    releaseWakeLock()
+  }, [])
+
+  return {
+    status, route, elapsedSeconds, error, lastGapSeconds,
+    start, resume: start, pause, finish, discard, dismissGap,
+  }
 }

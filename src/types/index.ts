@@ -53,6 +53,8 @@ export interface LatLng {
 export interface RoutePoint extends LatLng {
   /** ms elapsed since the run started */
   t: number
+  /** True if this point arrived after a tracking gap (e.g. the tab was backgrounded) longer than a few seconds */
+  gapBefore?: boolean
 }
 
 export interface WorkoutSession {

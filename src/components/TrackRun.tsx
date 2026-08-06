@@ -21,7 +21,7 @@ function getCurrentPosition(): Promise<GeolocationPosition> {
 }
 
 export default function TrackRun({ onSave, onClose }: Props) {
-  const { status, route, elapsedSeconds, error, start, resume, pause, finish, discard } = useRunTracking()
+  const { status, route, elapsedSeconds, error, lastGapSeconds, start, resume, pause, finish, discard, dismissGap } = useRunTracking()
   const [saving, setSaving] = useState(false)
 
   const [suggestedRoute, setSuggestedRoute] = useState<LatLng[] | null>(null)
@@ -172,6 +172,15 @@ export default function TrackRun({ onSave, onClose }: Props) {
       {error && (
         <div className="mx-4 mb-3 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/30">
           <p className="text-xs text-red-400">{error}</p>
+        </div>
+      )}
+
+      {lastGapSeconds !== null && (
+        <div className="mx-4 mb-3 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-start justify-between gap-3">
+          <p className="text-xs text-amber-400">
+            Tracking gap of ~{formatDuration(lastGapSeconds)} — switching apps or locking your screen pauses GPS, so distance for that stretch is likely underestimated.
+          </p>
+          <button onClick={dismissGap} className="text-amber-400/70 hover:text-amber-400 flex-shrink-0 text-xs">✕</button>
         </div>
       )}
 

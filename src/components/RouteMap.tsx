@@ -1,12 +1,12 @@
 import { useEffect, useMemo } from 'react'
 import { MapContainer, TileLayer, Polyline, CircleMarker, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
-import { LatLng } from '../types'
+import { LatLng, RoutePoint } from '../types'
 
 const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_KEY as string | undefined
 
 interface Props {
-  route: LatLng[]
+  route: RoutePoint[]
   /** A suggested/planned route to overlay as a dashed guide underneath the live route */
   guideRoute?: LatLng[]
   height?: number | string
@@ -43,6 +43,23 @@ export default function RouteMap({ route, guideRoute, height = 220, live = false
   const positions = useMemo<[number, number][]>(() => route.map(p => [p.lat, p.lng]), [route])
   const guidePositions = useMemo<[number, number][]>(() => (guideRoute ?? []).map(p => [p.lat, p.lng]), [guideRoute])
 
+  // Split into segments at tracking gaps (e.g. the tab was backgrounded) so we don't
+  // draw a straight "teleport" line across whatever ground was actually covered —
+  // that stretch just isn't rendered rather than shown as a misleading shortcut.
+  const segments = useMemo<[number, number][][]>(() => {
+    const result: [number, number][][] = []
+    let current: [number, number][] = []
+    for (const p of route) {
+      if (p.gapBefore && current.length > 0) {
+        result.push(current)
+        current = []
+      }
+      current.push([p.lat, p.lng])
+    }
+    if (current.length > 0) result.push(current)
+    return result
+  }, [route])
+
   if (!MAPTILER_KEY) {
     return (
       <div style={{ ...emptyStyle, height }}>
@@ -78,7 +95,9 @@ export default function RouteMap({ route, guideRoute, height = 220, live = false
           <Polyline positions={guidePositions} pathOptions={{ color: '#38bdf8', weight: 3, dashArray: '6 8' }} />
         )}
 
-        {hasRoute && <Polyline positions={positions} pathOptions={{ color: '#F97316', weight: 4 }} />}
+        {hasRoute && segments.map((seg, i) => (
+          <Polyline key={i} positions={seg} pathOptions={{ color: '#F97316', weight: 4 }} />
+        ))}
 
         {hasRoute && live && (
           <>
