@@ -1,6 +1,17 @@
 import { useState, useMemo } from 'react'
 import { WorkoutSession, BodyWeightLog, ExerciseCategory } from '../types'
-import { getPersonalRecords, getExerciseProgress, getCategoryVolumeByWeek } from '../utils/calculations'
+import {
+  getPersonalRecords,
+  getExerciseProgress,
+  getCategoryVolumeByWeek,
+  getRaceBests,
+  getRunningSummary,
+  getRunProgress,
+  getValidRuns,
+  formatDuration,
+  formatPace,
+  RACE_DISTANCES,
+} from '../utils/calculations'
 import { exercises, categoryHexColors, categoryLabels } from '../data/exercises'
 import {
   ResponsiveContainer,
@@ -67,6 +78,27 @@ export default function Progress({ workouts, bodyWeightLogs, onAddBodyWeight, on
   const selectedPR = selectedId ? prs.get(selectedId) : null
   const selectedExercise = selectedId ? exercises.find(e => e.id === selectedId) : null
 
+  const validRuns = useMemo(() => getValidRuns(workouts), [workouts])
+  const raceBests = useMemo(() => getRaceBests(validRuns), [validRuns])
+  const runningSummary = useMemo(() => getRunningSummary(validRuns), [validRuns])
+  const runProgress = useMemo(() => getRunProgress(validRuns), [validRuns])
+  const hasRuns = runningSummary.totalRuns > 0
+
+  // Must run before the early return below — every hook in this component has to
+  // execute on every render regardless of `workouts.length`, or React throws once
+  // `workouts` transitions from empty (initial fetch) to populated.
+  const bwChartData = useMemo(() =>
+    [...bodyWeightLogs]
+      .reverse()
+      .slice(-30)
+      .map(l => ({
+        label: new Date(l.logged_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+        weight: l.weight_kg,
+        id: l.id,
+      })),
+    [bodyWeightLogs]
+  )
+
   if (workouts.length === 0) {
     return (
       <div className="px-4 pt-6 pb-6">
@@ -80,18 +112,6 @@ export default function Progress({ workouts, bodyWeightLogs, onAddBodyWeight, on
       </div>
     )
   }
-
-  const bwChartData = useMemo(() =>
-    [...bodyWeightLogs]
-      .reverse()
-      .slice(-30)
-      .map(l => ({
-        label: new Date(l.logged_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
-        weight: l.weight_kg,
-        id: l.id,
-      })),
-    [bodyWeightLogs]
-  )
 
   const handleAddBw = () => {
     const val = parseFloat(bwInput)
@@ -200,6 +220,89 @@ export default function Progress({ workouts, bodyWeightLogs, onAddBodyWeight, on
               </BarChart>
             </ResponsiveContainer>
           </div>
+        </div>
+      )}
+
+      {/* Running */}
+      {hasRuns && (
+        <div className="mb-6">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Running</p>
+
+          {/* Summary stats */}
+          <div className="grid grid-cols-4 gap-2 mb-3">
+            <div className="bg-gray-900 rounded-xl p-3 border border-gray-800 text-center">
+              <p className="text-xs text-gray-500">Total</p>
+              <p className="text-sm font-semibold text-white mt-1">{runningSummary.totalDistanceKm} km</p>
+            </div>
+            <div className="bg-gray-900 rounded-xl p-3 border border-gray-800 text-center">
+              <p className="text-xs text-gray-500">Runs</p>
+              <p className="text-sm font-semibold text-white mt-1">{runningSummary.totalRuns}</p>
+            </div>
+            <div className="bg-gray-900 rounded-xl p-3 border border-gray-800 text-center">
+              <p className="text-xs text-gray-500">Longest</p>
+              <p className="text-sm font-semibold text-white mt-1">{runningSummary.longestRunKm} km</p>
+            </div>
+            <div className="bg-gray-900 rounded-xl p-3 border border-gray-800 text-center">
+              <p className="text-xs text-gray-500">Best pace</p>
+              <p className="text-sm font-semibold text-white mt-1">
+                {runningSummary.bestPaceSecPerKm ? formatPace(1, runningSummary.bestPaceSecPerKm) : '—'}
+              </p>
+            </div>
+          </div>
+
+          {/* Race bests */}
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            {RACE_DISTANCES.map(race => {
+              const best = raceBests.get(race.key)
+              return (
+                <div
+                  key={race.key}
+                  className={`rounded-xl p-3 border ${best ? 'bg-gray-900 border-orange-500/30' : 'bg-gray-900/40 border-gray-800'}`}
+                >
+                  <p className={`text-xs font-medium ${best ? 'text-orange-500' : 'text-gray-600'}`}>{race.label}</p>
+                  {best ? (
+                    <>
+                      <p className="text-lg font-bold text-white mt-1">{formatDuration(best.durationSeconds)}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{formatPace(best.distanceKm, best.durationSeconds)}</p>
+                    </>
+                  ) : (
+                    <p className="text-xs text-gray-600 mt-1">Not logged yet</p>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Pace over time */}
+          {runProgress.length >= 2 ? (
+            <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+              <p className="text-xs text-gray-500 mb-3">Pace over time</p>
+              <ResponsiveContainer width="100%" height={160}>
+                <LineChart data={runProgress} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                  <YAxis
+                    tick={{ fontSize: 10, fill: '#6b7280' }}
+                    axisLine={false}
+                    tickLine={false}
+                    reversed
+                    tickFormatter={(v: number) => `${Math.floor(v / 60)}:${String(Math.round(v % 60)).padStart(2, '0')}`}
+                  />
+                  <Tooltip
+                    contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: 8, fontSize: 12 }}
+                    labelStyle={{ color: '#d1d5db' }}
+                    itemStyle={{ color: '#f97316' }}
+                    formatter={(val: number) => [formatPace(1, val), 'Pace']}
+                  />
+                  <Line type="monotone" dataKey="paceSecPerKm" stroke="#f97316" strokeWidth={2} dot={{ fill: '#f97316', r: 3 }} activeDot={{ r: 5 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="bg-gray-900 rounded-xl p-3 border border-gray-800">
+              <p className="text-xs text-gray-500">Log more runs to see your pace trend.</p>
+            </div>
+          )}
         </div>
       )}
 

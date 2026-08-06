@@ -3,6 +3,8 @@ import confetti from 'canvas-confetti'
 import ExercisePicker from '../components/ExercisePicker'
 import SetRow from '../components/SetRow'
 import ExerciseImageModal from '../components/ExerciseImageModal'
+import LogRunModal from '../components/LogRunModal'
+import TrackRun from '../components/TrackRun'
 import { Exercise, WorkoutExercise, WorkoutSet, WorkoutSession } from '../types'
 import { formatDuration, getPersonalRecords, calculateOneRM, suggestNextSet } from '../utils/calculations'
 import { exercises as exerciseList } from '../data/exercises'
@@ -61,6 +63,7 @@ interface Props {
   onUpdateName: (name: string) => void
   onFinish: (notes?: string) => void
   onDiscard: () => void
+  onLogRun: (session: WorkoutSession) => void
   getLastSession: (exerciseId: string, excludeId?: string) => { exercises: WorkoutExercise[] } | null
   bodyWeightKg?: number | null
   workouts: WorkoutSession[]
@@ -78,11 +81,14 @@ export default function ActiveWorkout({
   onUpdateName,
   onFinish,
   onDiscard,
+  onLogRun,
   getLastSession,
   bodyWeightKg,
   workouts,
 }: Props) {
   const [showPicker, setShowPicker] = useState(false)
+  const [showLogRun, setShowLogRun] = useState(false)
+  const [showTrackRun, setShowTrackRun] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [editingName, setEditingName] = useState(false)
   const [showFinishModal, setShowFinishModal] = useState(false)
@@ -241,10 +247,25 @@ export default function ActiveWorkout({
 
         <button
           onClick={() => onStart()}
-          className="w-full py-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-lg transition-colors mb-4"
+          className="w-full py-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-lg transition-colors mb-3"
         >
           + Start Empty Workout
         </button>
+
+        <div className="grid grid-cols-2 gap-3 mb-4">
+          <button
+            onClick={() => setShowLogRun(true)}
+            className="py-4 rounded-xl border border-gray-700 text-gray-300 font-semibold hover:border-orange-500 hover:text-orange-500 transition-colors"
+          >
+            <span className="no-invert">📝</span> Log a Run
+          </button>
+          <button
+            onClick={() => setShowTrackRun(true)}
+            className="py-4 rounded-xl border border-gray-700 text-gray-300 font-semibold hover:border-orange-500 hover:text-orange-500 transition-colors"
+          >
+            <span className="no-invert">🛰️</span> Track Run (GPS)
+          </button>
+        </div>
 
         <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 text-center">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-12 h-12 mx-auto mb-3 text-gray-700">
@@ -256,6 +277,19 @@ export default function ActiveWorkout({
           <p className="text-gray-600 text-sm">Add exercises, log your sets with weight & reps.</p>
           <p className="text-gray-600 text-sm mt-1">Your previous performance is shown for each set.</p>
         </div>
+
+        {showLogRun && (
+          <LogRunModal
+            onSave={session => { onLogRun(session); setShowLogRun(false) }}
+            onClose={() => setShowLogRun(false)}
+          />
+        )}
+        {showTrackRun && (
+          <TrackRun
+            onSave={session => { onLogRun(session); setShowTrackRun(false) }}
+            onClose={() => setShowTrackRun(false)}
+          />
+        )}
       </div>
     )
   }

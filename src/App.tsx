@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Page } from './types'
+import { Page, WorkoutSession } from './types'
 import { useWorkouts } from './hooks/useWorkouts'
 import { useActiveWorkout } from './hooks/useActiveWorkout'
 import { useUserSettings } from './hooks/useUserSettings'
@@ -44,6 +44,10 @@ function AppContent() {
     const session = activeHook.finishWorkout(notes)
     if (session) workoutsHook.addWorkout(session)
     setPage('dashboard')
+  }
+
+  const handleLogRun = (session: WorkoutSession) => {
+    workoutsHook.addWorkout(session)
   }
 
   if (authLoading) {
@@ -94,6 +98,7 @@ function AppContent() {
             onUpdateName={activeHook.updateWorkoutName}
             onFinish={handleWorkoutFinish}
             onDiscard={activeHook.discardWorkout}
+            onLogRun={handleLogRun}
             getLastSession={workoutsHook.getLastSession}
             bodyWeightKg={bodyWeightHook.latest}
             workouts={workoutsHook.workouts}

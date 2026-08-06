@@ -1,9 +1,10 @@
 import { useState, useRef } from 'react'
 import html2canvas from 'html2canvas'
 import { WorkoutSession } from '../types'
-import { totalVolume, formatDuration } from '../utils/calculations'
+import { totalVolume, formatDuration, formatPace } from '../utils/calculations'
 import { categoryColors } from '../data/exercises'
 import ShareCard from './ShareCard'
+import RouteMap from './RouteMap'
 
 interface Props {
   workout: WorkoutSession
@@ -14,6 +15,7 @@ interface Props {
 export default function WorkoutCard({ workout, onDelete, onFavorite }: Props) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [sharing, setSharing] = useState(false)
+  const [showRoute, setShowRoute] = useState(false)
   const shareRef = useRef<HTMLDivElement>(null)
 
   const handleShare = async () => {
@@ -45,6 +47,8 @@ export default function WorkoutCard({ workout, onDelete, onFavorite }: Props) {
       setSharing(false)
     }, 'image/png')
   }
+  const isRun = workout.type === 'run'
+  const hasRoute = isRun && !!workout.route && workout.route.length > 1
   const volume = totalVolume(workout)
   const completedSets = workout.exercises.reduce((n, e) => n + e.sets.filter(s => s.completed).length, 0)
   const date = new Date(workout.date)
@@ -54,7 +58,10 @@ export default function WorkoutCard({ workout, onDelete, onFavorite }: Props) {
     <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
       <div className="flex items-start justify-between gap-2 mb-3">
         <div>
-          <h3 className="font-semibold text-white">{workout.name}</h3>
+          <h3 className="font-semibold text-white">
+            {isRun && <span className="no-invert mr-1.5">🏃</span>}
+            {workout.name}
+          </h3>
           <p className="text-xs text-gray-500 mt-0.5">{dateStr}</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -99,23 +106,54 @@ export default function WorkoutCard({ workout, onDelete, onFavorite }: Props) {
           <p className="text-xs text-gray-500">Duration</p>
           <p className="text-sm font-medium text-white">{formatDuration(workout.durationSeconds)}</p>
         </div>
-        <div className="text-center">
-          <p className="text-xs text-gray-500">Volume</p>
-          <p className="text-sm font-medium text-white">{volume.toLocaleString()} kg</p>
-        </div>
-        <div className="text-center">
-          <p className="text-xs text-gray-500">Sets</p>
-          <p className="text-sm font-medium text-white">{completedSets}</p>
-        </div>
-        <div className="text-center">
-          <p className="text-xs text-gray-500">Exercises</p>
-          <p className="text-sm font-medium text-white">{workout.exercises.length}</p>
-        </div>
+        {isRun ? (
+          <>
+            <div className="text-center">
+              <p className="text-xs text-gray-500">Distance</p>
+              <p className="text-sm font-medium text-white">{workout.distanceKm} km</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-gray-500">Pace</p>
+              <p className="text-sm font-medium text-white">{formatPace(workout.distanceKm ?? 0, workout.durationSeconds)}</p>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="text-center">
+              <p className="text-xs text-gray-500">Volume</p>
+              <p className="text-sm font-medium text-white">{volume.toLocaleString()} kg</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-gray-500">Sets</p>
+              <p className="text-sm font-medium text-white">{completedSets}</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-gray-500">Exercises</p>
+              <p className="text-sm font-medium text-white">{workout.exercises.length}</p>
+            </div>
+          </>
+        )}
       </div>
+
+      {/* Route map (GPS-tracked runs only) */}
+      {hasRoute && (
+        <div className="mb-3">
+          {showRoute ? (
+            <RouteMap route={workout.route!} height={180} />
+          ) : (
+            <button
+              onClick={() => setShowRoute(true)}
+              className="w-full py-2 rounded-lg border border-dashed border-gray-700 text-gray-500 text-xs hover:border-orange-500 hover:text-orange-500 transition-colors"
+            >
+              View Route
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Exercise list */}
       <div className="space-y-1">
-        {workout.exercises.map(ex => {
+        {!isRun && workout.exercises.map(ex => {
           const best = ex.sets
             .filter(s => s.completed && s.weight > 0 && s.reps > 0)
             .sort((a, b) => b.weight - a.weight)[0]

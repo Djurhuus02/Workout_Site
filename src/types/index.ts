@@ -45,6 +45,16 @@ export interface WorkoutExercise {
   notes?: string
 }
 
+export interface LatLng {
+  lat: number
+  lng: number
+}
+
+export interface RoutePoint extends LatLng {
+  /** ms elapsed since the run started */
+  t: number
+}
+
 export interface WorkoutSession {
   id: string
   date: string
@@ -53,6 +63,11 @@ export interface WorkoutSession {
   durationSeconds: number
   favorited?: boolean
   notes?: string
+  /** Absent/'strength' = a normal lifting session; 'run' = a manually logged or GPS-tracked run (no exercises) */
+  type?: 'strength' | 'run'
+  distanceKm?: number
+  /** Present only for GPS-tracked runs */
+  route?: RoutePoint[]
 }
 
 export interface PersonalRecord {

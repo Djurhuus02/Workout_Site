@@ -1,4 +1,25 @@
-import { WorkoutSession, PersonalRecord, ExerciseCategory } from '../types'
+import { WorkoutSession, PersonalRecord, ExerciseCategory, LatLng } from '../types'
+
+const EARTH_RADIUS_KM = 6371
+
+/** Great-circle distance between two lat/lng points, in km */
+function haversineKm(a: LatLng, b: LatLng): number {
+  const dLat = (b.lat - a.lat) * Math.PI / 180
+  const dLng = (b.lng - a.lng) * Math.PI / 180
+  const lat1 = a.lat * Math.PI / 180
+  const lat2 = b.lat * Math.PI / 180
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2
+  return 2 * EARTH_RADIUS_KM * Math.asin(Math.sqrt(h))
+}
+
+/** Total distance covered by a route (GPS-recorded or suggested), in km */
+export function routeDistanceKm(route: LatLng[]): number {
+  let total = 0
+  for (let i = 1; i < route.length; i++) {
+    total += haversineKm(route[i - 1], route[i])
+  }
+  return total
+}
 
 /** Start of the current ISO week (Monday, local midnight). Shared so all weekly stats/features agree on one week boundary. */
 export function getWeekStartDate(date: Date = new Date()): Date {
@@ -54,6 +75,11 @@ export function getPersonalRecords(workouts: WorkoutSession[]): Map<string, Pers
   return prs
 }
 
+/** Short "12 Mar"-style date label shared by all chart-data builders */
+function formatChartLabel(date: string | Date): string {
+  return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+}
+
 /** Get progress data for a specific exercise (for charting) */
 export interface ProgressPoint {
   rawDate: string
@@ -75,7 +101,7 @@ export function getExerciseProgress(workouts: WorkoutSession[], exerciseId: stri
       )
       return {
         rawDate: w.date,
-        label: new Date(w.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+        label: formatChartLabel(w.date),
         weight: bestSet.weight,
         reps: bestSet.reps,
         estimatedOneRM: Math.round(calculateOneRM(bestSet.weight, bestSet.reps) * 10) / 10,
@@ -92,6 +118,15 @@ export function formatDuration(seconds: number): string {
   if (h > 0) return `${h}h ${m}m`
   if (m > 0) return `${m}m ${s}s`
   return `${s}s`
+}
+
+/** Pace as min:sec per km, e.g. "5:24 /km" */
+export function formatPace(distanceKm: number, durationSeconds: number): string {
+  if (distanceKm <= 0 || durationSeconds <= 0) return '—'
+  const secPerKm = durationSeconds / distanceKm
+  const m = Math.floor(secPerKm / 60)
+  const s = Math.round(secPerKm % 60)
+  return `${m}:${String(s).padStart(2, '0')} /km`
 }
 
 export function formatWeight(kg: number): string {
@@ -159,6 +194,120 @@ export function suggestNextSet(previous: { weight: number; reps: number } | null
   return { weight: previous.weight, reps: previous.reps + 1, reason: 'increase_reps' }
 }
 
+export interface RaceDistance {
+  key: string
+  label: string
+  km: number
+}
+
+/** Standard race distances tracked for running PRs */
+export const RACE_DISTANCES: RaceDistance[] = [
+  { key: '1k', label: '1K', km: 1 },
+  { key: '5k', label: '5K', km: 5 },
+  { key: '10k', label: '10K', km: 10 },
+  { key: 'half', label: 'Half Marathon', km: 21.0975 },
+  { key: 'marathon', label: 'Marathon', km: 42.195 },
+]
+
+/** Distance options offered when suggesting a route to run — the race distances plus a few extra training distances */
+export const ROUTE_SUGGESTION_DISTANCES: RaceDistance[] = [
+  ...RACE_DISTANCES,
+  { key: '2k', label: '2K', km: 2 },
+  { key: '3k', label: '3K', km: 3 },
+  { key: '15k', label: '15K', km: 15 },
+].sort((a, b) => a.km - b.km)
+
+/** Runs with usable distance/duration data, for any running-stats calculation */
+export function getValidRuns(workouts: WorkoutSession[]): WorkoutSession[] {
+  return workouts.filter(w => w.type === 'run' && (w.distanceKm ?? 0) > 0 && w.durationSeconds > 0)
+}
+
+export interface RaceBest {
+  distanceKm: number
+  durationSeconds: number
+  date: string
+}
+
+/**
+ * Best logged run matching each standard race distance. Manually logged runs rarely hit a
+ * distance exactly, so each is matched to the nearest standard distance within a tolerance band
+ * (tighter for longer races, since a few hundred metres matters less at 1K than at marathon
+ * distance), then the fastest-pace run within that band is taken as the PR for that distance.
+ */
+export function getRaceBests(runs: WorkoutSession[]): Map<string, RaceBest> {
+  const bests = new Map<string, RaceBest>()
+
+  for (const race of RACE_DISTANCES) {
+    const tolerance = race.km <= 1 ? 0.15 : race.km <= 10 ? 0.1 : 0.05
+    let best: WorkoutSession | null = null
+    let bestPace = Infinity
+
+    for (const run of runs) {
+      const km = run.distanceKm!
+      if (Math.abs(km - race.km) / race.km > tolerance) continue
+      const pace = run.durationSeconds / km
+      if (pace < bestPace) {
+        bestPace = pace
+        best = run
+      }
+    }
+
+    if (best) {
+      bests.set(race.key, {
+        distanceKm: best.distanceKm!,
+        durationSeconds: best.durationSeconds,
+        date: best.date,
+      })
+    }
+  }
+
+  return bests
+}
+
+export interface RunningSummary {
+  totalRuns: number
+  totalDistanceKm: number
+  longestRunKm: number
+  bestPaceSecPerKm: number | null
+}
+
+/** Lifetime running totals — distance, run count, longest run, and fastest pace ever logged */
+export function getRunningSummary(runs: WorkoutSession[]): RunningSummary {
+  const totalDistanceKm = runs.reduce((sum, r) => sum + (r.distanceKm ?? 0), 0)
+  const longestRunKm = runs.reduce((max, r) => Math.max(max, r.distanceKm ?? 0), 0)
+  const bestPaceSecPerKm = runs.length > 0
+    ? Math.min(...runs.map(r => r.durationSeconds / (r.distanceKm ?? 1)))
+    : null
+
+  return {
+    totalRuns: runs.length,
+    totalDistanceKm: Math.round(totalDistanceKm * 100) / 100,
+    longestRunKm,
+    bestPaceSecPerKm,
+  }
+}
+
+export interface RunProgressPoint {
+  rawDate: string
+  label: string
+  distanceKm: number
+  durationSeconds: number
+  paceSecPerKm: number
+}
+
+/** Chronological run log for distance/pace-over-time charting */
+export function getRunProgress(runs: WorkoutSession[]): RunProgressPoint[] {
+  return runs
+    .map(w => ({
+      rawDate: w.date,
+      label: formatChartLabel(w.date),
+      distanceKm: w.distanceKm!,
+      durationSeconds: w.durationSeconds,
+      paceSecPerKm: Math.round((w.durationSeconds / w.distanceKm!) * 10) / 10,
+    }))
+    .sort((a, b) => new Date(a.rawDate).getTime() - new Date(b.rawDate).getTime())
+}
+
 export interface CategoryVolumePoint {
   label: string
   rawDate: string
@@ -179,7 +328,7 @@ export function getCategoryVolumeByWeek(
     let bucket = buckets.get(key)
     if (!bucket) {
       bucket = {
-        label: weekStart.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+        label: formatChartLabel(weekStart),
         rawDate: key,
       }
       buckets.set(key, bucket)
@@ -195,6 +344,10 @@ export function getCategoryVolumeByWeek(
   }
 
   return [...buckets.values()]
+    // Drop weeks with no actual category volume (e.g. a week where the only
+    // session logged was a run) — otherwise an empty week can displace a real
+    // training week out of the last-N-weeks window below.
+    .filter(bucket => Object.keys(bucket).some(k => k !== 'label' && k !== 'rawDate'))
     .sort((a, b) => a.rawDate.localeCompare(b.rawDate))
     .slice(-weeks)
 }

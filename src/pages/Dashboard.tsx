@@ -359,7 +359,7 @@ export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWork
               onClick={() => { onStartTemplate(t.name, t.exercises); onNavigate('workout') }}
             />
           ))}
-          {workouts.filter(w => w.favorited).map((w, i) => (
+          {workouts.filter(w => w.favorited && w.type !== 'run').map((w, i) => (
             <TemplateRow
               key={w.id}
               name={w.name}

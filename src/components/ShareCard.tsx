@@ -1,12 +1,13 @@
 import { forwardRef } from 'react'
 import { WorkoutSession } from '../types'
-import { totalVolume, formatDuration } from '../utils/calculations'
+import { totalVolume, formatDuration, formatPace } from '../utils/calculations'
 
 interface Props {
   workout: WorkoutSession
 }
 
 const ShareCard = forwardRef<HTMLDivElement, Props>(({ workout }, ref) => {
+  const isRun = workout.type === 'run'
   const volume = totalVolume(workout)
   const date = new Date(workout.date).toLocaleDateString('en-GB', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
@@ -51,11 +52,15 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(({ workout }, ref) => {
       <div style={{
         display: 'flex', gap: 10, marginBottom: 20,
       }}>
-        {[
+        {(isRun ? [
+          { label: 'Duration', value: formatDuration(workout.durationSeconds) },
+          { label: 'Distance', value: `${workout.distanceKm} km` },
+          { label: 'Pace', value: formatPace(workout.distanceKm ?? 0, workout.durationSeconds) },
+        ] : [
           { label: 'Duration', value: formatDuration(workout.durationSeconds) },
           { label: 'Volume', value: `${volume.toLocaleString()} kg` },
           { label: 'Exercises', value: String(workout.exercises.length) },
-        ].map(s => (
+        ]).map(s => (
           <div key={s.label} style={{
             flex: 1, background: 'rgba(255,255,255,0.04)',
             borderRadius: 10, padding: '10px 12px',
@@ -69,7 +74,7 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(({ workout }, ref) => {
 
       {/* Exercises */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
-        {workout.exercises.slice(0, 6).map(ex => {
+        {!isRun && workout.exercises.slice(0, 6).map(ex => {
           const best = ex.sets
             .filter(s => s.completed && s.weight > 0 && s.reps > 0)
             .sort((a, b) => b.weight - a.weight)[0]
@@ -87,7 +92,7 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(({ workout }, ref) => {
             </div>
           )
         })}
-        {workout.exercises.length > 6 && (
+        {!isRun && workout.exercises.length > 6 && (
           <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.25)', textAlign: 'center' }}>
             +{workout.exercises.length - 6} more
           </p>
