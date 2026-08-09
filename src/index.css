@@ -44,6 +44,53 @@
   ::-webkit-scrollbar {
     display: none;
   }
+
+  /* Native-app touch feel: no double-tap-to-zoom delay on controls, no long-press
+     text selection or iOS save-image callout on UI elements. */
+  button,
+  a {
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  input,
+  select,
+  textarea {
+    touch-action: manipulation;
+  }
+
+  img {
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  /* Instant pressed-state feedback on every button — hover styles don't exist on touch,
+     so without this taps feel like nothing happened until the resulting UI change lands.
+     Press-in is instant (transition: none), release eases back via the rule below.
+     Kept at element specificity so it never overrides a component's own transition classes. */
+  button {
+    transition: transform 0.15s ease;
+  }
+
+  button:not(:disabled):active {
+    transform: scale(0.96);
+    transition: none !important;
+  }
+}
+
+@layer utilities {
+  /* Same press feedback for clickable non-button elements (cards, rows). */
+  .pressable {
+    transition: transform 0.15s ease;
+  }
+
+  .pressable:active {
+    transform: scale(0.98);
+    transition: none !important;
+  }
 }
 
 /* iOS ignores the manifest orientation lock, so enforce portrait-only with CSS.

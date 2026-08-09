@@ -85,6 +85,7 @@ function TemplateRow({ name, icon, subtitle, hovered, onMouseEnter, onMouseLeave
 }) {
   return (
     <div
+      className="pressable"
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       onClick={onClick}
@@ -245,6 +246,7 @@ export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWork
         position: 'relative', zIndex: 1,
       }}>
         <div
+          className="pressable"
           onClick={() => setShowGoalPicker(true)}
           style={{
             background: 'rgba(249,115,22,0.06)', border: '1px solid rgba(249,115,22,0.12)',
