@@ -39,7 +39,7 @@ A clean and simple workout tracker built to log sessions, follow progress, and k
 
 - **Frontend:** React, TypeScript, Vite, Tailwind CSS, Recharts (charts), Leaflet/react-leaflet (maps)
 - **Auth & Database:** Supabase
-- **Maps & Routing:** MapTiler (tiles), OpenRouteService (route suggestions)
+- **Maps & Routing:** MapTiler (tiles), OSRM via the free FOSSGIS routing server (route suggestions)
 - **Hosting:** Azure App Service (served via a small Express app)
 - **CI/CD:** GitHub Actions
 
@@ -88,9 +88,8 @@ cp .env.example .env
 | `VITE_SUPABASE_URL` | Your [Supabase](https://supabase.com) project's API URL |
 | `VITE_SUPABASE_ANON_KEY` | Your Supabase project's anon/public key |
 | `VITE_MAPTILER_KEY` | Free API key from [MapTiler](https://www.maptiler.com/) (needed for the map on running pages) |
-| `VITE_ORS_KEY` | Free API key from [OpenRouteService](https://openrouteservice.org/dev/#/home) (needed for suggested running routes) |
 
-The app still runs without `VITE_MAPTILER_KEY`/`VITE_ORS_KEY` — those two features just show a message asking for a key instead of a map.
+Suggested running routes use the free public [FOSSGIS OSRM server](https://routing.openstreetmap.de/) — no key or signup needed. The app still runs without `VITE_MAPTILER_KEY` — the map just shows a message asking for a key instead.
 
 ### 4. Run the dev server
 
@@ -105,4 +104,4 @@ npm run build
 npm start
 ```
 
-`npm run build` type-checks and produces a static build in `dist/`; `npm start` serves it via the Express server in `server.js`. Deploys to Azure App Service run through the GitHub Actions workflow in `.github/workflows/`, which needs the same four variables above set as repository secrets.
+`npm run build` type-checks and produces a static build in `dist/`; `npm start` serves it via the Express server in `server.js`. Deploys to Azure App Service run through the GitHub Actions workflow in `.github/workflows/`, which needs the same three variables above set as repository secrets.

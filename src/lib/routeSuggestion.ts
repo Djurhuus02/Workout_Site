@@ -1,63 +1,74 @@
 import { LatLng } from '../types'
-
-const ORS_KEY = import.meta.env.VITE_ORS_KEY as string | undefined
+import { routeDistanceKm } from '../utils/calculations'
 
 export class RouteSuggestionError extends Error {}
 
+// Free community OSRM instance run by FOSSGIS (the German OSM chapter) — no API key,
+// CORS-enabled, foot profile. Fair-use service: we make at most 2 requests per tap.
+const OSRM_BASE = 'https://routing.openstreetmap.de/routed-foot/route/v1/foot'
+
+/** Point `distKm` away from `origin` along `bearingDeg` (equirectangular approximation — fine at these radii) */
+function destinationPoint(origin: LatLng, bearingDeg: number, distKm: number): LatLng {
+  const rad = bearingDeg * Math.PI / 180
+  const dLat = (distKm * Math.cos(rad)) / 111.32
+  const dLng = (distKm * Math.sin(rad)) / (111.32 * Math.cos(origin.lat * Math.PI / 180))
+  return { lat: origin.lat + dLat, lng: origin.lng + dLng }
+}
+
 /**
- * Asks OpenRouteService's round-trip routing for a loop of roughly `distanceKm`
- * starting and ending at `start`. Real road/path networks rarely allow an exact
- * match, so the returned route's actual length can be off by ~10-20%.
+ * OSRM only routes point-to-point, so the loop is synthesized: waypoints are placed on a
+ * circle whose circumference matches the target distance, with the start on its rim, and
+ * OSRM routes through them and back. `radiusScale` lets a retry shrink/grow the circle.
  */
-export async function suggestRoute(start: LatLng, distanceKm: number): Promise<LatLng[]> {
-  if (!ORS_KEY) {
-    throw new RouteSuggestionError('Route suggestions need a free OpenRouteService API key — add VITE_ORS_KEY to your .env file.')
-  }
+async function fetchLoop(start: LatLng, distanceKm: number, bearingDeg: number, radiusScale: number): Promise<LatLng[]> {
+  const radiusKm = (distanceKm / (2 * Math.PI)) * radiusScale
+  const center = destinationPoint(start, bearingDeg, radiusKm)
+  // Angle from the center back to the start; the other waypoints sit at 90° steps around the circle
+  const startAngle = bearingDeg + 180
+  const waypoints = [90, 180, 270].map(offset => destinationPoint(center, startAngle + offset, radiusKm))
+
+  const coords = [start, ...waypoints, start].map(p => `${p.lng.toFixed(6)},${p.lat.toFixed(6)}`).join(';')
 
   let res: Response
   try {
-    // api.heigit.org returns proper CORS headers on error responses (unlike
-    // api.openrouteservice.org, whose errors get silently hidden from JS by the
-    // browser) — see https://ask.openrouteservice.org/t/deprecating-api-openrouteservice-org-in-favour-of-api-heigit-org/7912
-    res = await fetch('https://api.heigit.org/openrouteservice/v2/directions/foot-walking/geojson', {
-      method: 'POST',
-      headers: {
-        Authorization: ORS_KEY,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        coordinates: [[start.lng, start.lat]],
-        options: {
-          round_trip: {
-            length: Math.round(distanceKm * 1000),
-            points: 4,
-            seed: Math.floor(Math.random() * 1_000_000),
-          },
-        },
-      }),
-    })
-  } catch (err) {
-    const detail = err instanceof Error ? err.message : String(err)
-    throw new RouteSuggestionError(`Could not reach the routing service (${detail}). Check the browser console for a CORS error.`)
+    res = await fetch(`${OSRM_BASE}/${coords}?overview=full&geometries=geojson`)
+  } catch {
+    throw new RouteSuggestionError('Could not reach the routing service — check your connection.')
   }
 
   if (!res.ok) {
-    const body = await res.text().catch(() => '')
-    throw new RouteSuggestionError(`Couldn't generate a route (${res.status}). ${body.slice(0, 200)}`)
+    throw new RouteSuggestionError(`The routing service returned an error (${res.status}). Try again in a moment.`)
   }
 
-  let data: unknown
+  let data: { code?: string; routes?: { geometry?: { coordinates?: [number, number][] } }[] }
   try {
     data = await res.json()
   } catch {
     throw new RouteSuggestionError('The routing service returned an unexpected response.')
   }
 
-  const coords: [number, number][] =
-    (data as { features?: { geometry?: { coordinates?: [number, number][] } }[] })?.features?.[0]?.geometry?.coordinates ?? []
-  if (coords.length === 0) {
-    throw new RouteSuggestionError('No route found for that distance near your location.')
+  const points = data.code === 'Ok' ? data.routes?.[0]?.geometry?.coordinates ?? [] : []
+  if (points.length < 2) {
+    throw new RouteSuggestionError('No route found near your location — this works best near mapped roads and paths.')
   }
 
-  return coords.map(([lng, lat]) => ({ lat, lng }))
+  return points.map(([lng, lat]) => ({ lat, lng }))
+}
+
+/**
+ * Suggests a loop of roughly `distanceKm` starting and ending at `start`. A random
+ * bearing makes each request (and each Regenerate) explore a different direction.
+ * Real road networks rarely match the target exactly; one corrective retry rescales
+ * the circle if the first attempt lands more than 15% off.
+ */
+export async function suggestRoute(start: LatLng, distanceKm: number): Promise<LatLng[]> {
+  const bearingDeg = Math.random() * 360
+
+  const first = await fetchLoop(start, distanceKm, bearingDeg, 1)
+  const firstKm = routeDistanceKm(first)
+  if (Math.abs(firstKm - distanceKm) / distanceKm <= 0.15) return first
+
+  const second = await fetchLoop(start, distanceKm, bearingDeg, distanceKm / firstKm)
+  const secondKm = routeDistanceKm(second)
+  return Math.abs(secondKm - distanceKm) <= Math.abs(firstKm - distanceKm) ? second : first
 }
