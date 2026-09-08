@@ -131,6 +131,7 @@ export default function Settings({ onNavigate, theme, onThemeChange, achievement
               </div>
               {/* Toggle switch */}
               <div
+                className="pressable"
                 onClick={() => onThemeChange(theme === 'dark' ? 'light' : 'dark')}
                 style={{
                   width: 44, height: 26, borderRadius: 13,
@@ -261,6 +262,13 @@ export default function Settings({ onNavigate, theme, onThemeChange, achievement
             </div>
             <p style={{ margin: '8px 0 0', fontSize: 13, color: 'rgba(255,255,255,0.35)', lineHeight: 1.5 }}>
               Built for people who actually show up. No fluff, no noise — just your lifts, your progress, your gains. Now stop reading and go train.
+            </p>
+            <p style={{ margin: '12px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.25)', lineHeight: 1.5 }}>
+              Exercise illustrations adapted from{' '}
+              <a href="https://github.com/everkinetic/data" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.4)' }}>Everkinetic</a>
+              {' '}via{' '}
+              <a href="https://github.com/bryllim/workout-guide" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.4)' }}>workout-guide</a>
+              {' '}(CC BY-SA 4.0).
             </p>
           </div>
         </section>

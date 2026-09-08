@@ -1,0 +1,16 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+<circle cx="262" cy="96" r="30" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 220 158 C 234 146, 292 146, 306 158 L 312 210 C 300 240, 296 270, 300 300
+ L 300 320 L 216 320 L 216 300 C 220 270, 216 240, 204 210 Z" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 220 165 C 200 158, 178 158, 168 172 C 176 168, 194 168, 206 176 Z" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 306 165 C 326 158, 348 158, 358 172 C 350 168, 332 168, 320 176 Z" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<line x1="168" y1="172" x2="196" y2="206" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<line x1="358" y1="172" x2="330" y2="206" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<line x1="150" y1="210" x2="372" y2="210" stroke="#fff" stroke-width="6" stroke-linecap="round"/><rect x="143.0" y="193.0" width="14" height="34" rx="4" fill="#fff" stroke="none" transform="rotate(0.0 150 210)"/><rect x="365.0" y="193.0" width="14" height="34" rx="4" fill="#fff" stroke="none" transform="rotate(0.0 372 210)"/>
+<line x1="222" y1="320" x2="298" y2="320" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 228 320 C 222 344, 210 356, 206 380 C 202 410, 206 450, 210 492" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 292 320 C 298 344, 310 356, 314 380 C 318 410, 314 450, 310 492" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 206 380 C 214 372, 222 372, 230 378" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 314 380 C 306 372, 298 372, 290 378" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<rect x="188" y="492" width="30" height="8" rx="3" fill="#fff" stroke="none"/><rect x="302" y="492" width="30" height="8" rx="3" fill="#fff" stroke="none"/>
+</svg>

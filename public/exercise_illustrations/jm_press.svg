@@ -1,0 +1,11 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+<line x1="130" y1="340" x2="380" y2="340" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<circle cx="180" cy="292" r="27" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 208 280 C 254 268, 320 268, 360 282 L 362 306 C 320 292, 254 292, 208 306 Z" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 220 278 C 218 254, 228 234, 246 222" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 246 222 C 262 230, 272 244, 272 260" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 226 302 C 226 326, 238 346, 256 358" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 256 358 C 272 348, 280 334, 280 318" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<line x1="216" y1="218" x2="282" y2="218" stroke="#fff" stroke-width="6" stroke-linecap="round"/><rect x="209.0" y="201.0" width="14" height="34" rx="4" fill="#fff" stroke="none" transform="rotate(0.0 216 218)"/><rect x="275.0" y="201.0" width="14" height="34" rx="4" fill="#fff" stroke="none" transform="rotate(0.0 282 218)"/>
+<rect x="370" y="336" width="26" height="8" rx="3" fill="#fff" stroke="none"/>
+</svg>
