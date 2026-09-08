@@ -8,10 +8,16 @@ import {
   getRunningSummary,
   getRunProgress,
   getValidRuns,
+  getSwimBests,
+  getSwimmingSummary,
+  getSwimProgress,
+  getValidSwims,
   formatDuration,
   formatPace,
+  formatSwimPace,
   effectiveWeight,
   RACE_DISTANCES,
+  SWIM_DISTANCES,
 } from '../utils/calculations'
 import { exercises, categoryHexColors, categoryLabels } from '../data/exercises'
 import {
@@ -86,6 +92,12 @@ export default function Progress({ workouts, bodyWeightLogs, onAddBodyWeight, on
   const runningSummary = useMemo(() => getRunningSummary(validRuns), [validRuns])
   const runProgress = useMemo(() => getRunProgress(validRuns), [validRuns])
   const hasRuns = runningSummary.totalRuns > 0
+
+  const validSwims = useMemo(() => getValidSwims(workouts), [workouts])
+  const swimBests = useMemo(() => getSwimBests(validSwims), [validSwims])
+  const swimmingSummary = useMemo(() => getSwimmingSummary(validSwims), [validSwims])
+  const swimProgress = useMemo(() => getSwimProgress(validSwims), [validSwims])
+  const hasSwims = swimmingSummary.totalSwims > 0
 
   // Must run before the early return below — every hook in this component has to
   // execute on every render regardless of `workouts.length`, or React throws once
@@ -304,6 +316,89 @@ export default function Progress({ workouts, bodyWeightLogs, onAddBodyWeight, on
           ) : (
             <div className="bg-gray-900 rounded-xl p-3 border border-gray-800">
               <p className="text-xs text-gray-500">Log more runs to see your pace trend.</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Swimming */}
+      {hasSwims && (
+        <div className="mb-6">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Swimming</p>
+
+          {/* Summary stats */}
+          <div className="grid grid-cols-4 gap-2 mb-3">
+            <div className="bg-gray-900 rounded-xl p-3 border border-gray-800 text-center">
+              <p className="text-xs text-gray-500">Total</p>
+              <p className="text-sm font-semibold text-white mt-1">{swimmingSummary.totalDistanceM.toLocaleString()} m</p>
+            </div>
+            <div className="bg-gray-900 rounded-xl p-3 border border-gray-800 text-center">
+              <p className="text-xs text-gray-500">Swims</p>
+              <p className="text-sm font-semibold text-white mt-1">{swimmingSummary.totalSwims}</p>
+            </div>
+            <div className="bg-gray-900 rounded-xl p-3 border border-gray-800 text-center">
+              <p className="text-xs text-gray-500">Longest</p>
+              <p className="text-sm font-semibold text-white mt-1">{swimmingSummary.longestSwimM.toLocaleString()} m</p>
+            </div>
+            <div className="bg-gray-900 rounded-xl p-3 border border-gray-800 text-center">
+              <p className="text-xs text-gray-500">Best pace</p>
+              <p className="text-sm font-semibold text-white mt-1">
+                {swimmingSummary.bestPaceSecPer100m ? formatSwimPace(100, swimmingSummary.bestPaceSecPer100m) : '—'}
+              </p>
+            </div>
+          </div>
+
+          {/* Distance bests */}
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            {SWIM_DISTANCES.map(dist => {
+              const best = swimBests.get(dist.key)
+              return (
+                <div
+                  key={dist.key}
+                  className={`rounded-xl p-3 border ${best ? 'bg-gray-900 border-sky-500/30' : 'bg-gray-900/40 border-gray-800'}`}
+                >
+                  <p className={`text-xs font-medium ${best ? 'text-sky-400' : 'text-gray-600'}`}>{dist.label}</p>
+                  {best ? (
+                    <>
+                      <p className="text-lg font-bold text-white mt-1">{formatDuration(best.durationSeconds)}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{formatSwimPace(best.distanceM, best.durationSeconds)}</p>
+                    </>
+                  ) : (
+                    <p className="text-xs text-gray-600 mt-1">Not logged yet</p>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Pace over time */}
+          {swimProgress.length >= 2 ? (
+            <div className="bg-gray-900 rounded-xl p-4 border border-gray-800">
+              <p className="text-xs text-gray-500 mb-3">Pace over time</p>
+              <ResponsiveContainer width="100%" height={160}>
+                <LineChart data={swimProgress} margin={{ top: 5, right: 5, left: -20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#6b7280' }} axisLine={false} tickLine={false} />
+                  <YAxis
+                    tick={{ fontSize: 10, fill: '#6b7280' }}
+                    axisLine={false}
+                    tickLine={false}
+                    reversed
+                    tickFormatter={(v: number) => `${Math.floor(v / 60)}:${String(Math.round(v % 60)).padStart(2, '0')}`}
+                  />
+                  <Tooltip
+                    contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: 8, fontSize: 12 }}
+                    labelStyle={{ color: '#d1d5db' }}
+                    itemStyle={{ color: '#38bdf8' }}
+                    formatter={(val: number) => [formatSwimPace(100, val), 'Pace']}
+                  />
+                  <Line type="monotone" dataKey="paceSecPer100m" stroke="#38bdf8" strokeWidth={2} dot={{ fill: '#38bdf8', r: 3 }} activeDot={{ r: 5 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <div className="bg-gray-900 rounded-xl p-3 border border-gray-800">
+              <p className="text-xs text-gray-500">Log more swims to see your pace trend.</p>
             </div>
           )}
         </div>

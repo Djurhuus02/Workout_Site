@@ -385,7 +385,7 @@ export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWork
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <h2 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: 'rgba(255,255,255,0.85)' }}>Recent Workouts</h2>
               {workouts.length > 3 && (
-                <span onClick={() => onNavigate('history')} style={{ fontSize: 13, color: '#F97316', cursor: 'pointer' }}>
+                <span className="pressable" onClick={() => onNavigate('history')} style={{ fontSize: 13, color: '#F97316', cursor: 'pointer', display: 'inline-block' }}>
                   View all →
                 </span>
               )}

@@ -244,9 +244,18 @@ export const ROUTE_SUGGESTION_DISTANCES: RaceDistance[] = [
   { key: '15k', label: '15K', km: 15 },
 ].sort((a, b) => a.km - b.km)
 
+function getValidCardio(workouts: WorkoutSession[], type: 'run' | 'swim'): WorkoutSession[] {
+  return workouts.filter(w => w.type === type && (w.distanceKm ?? 0) > 0 && w.durationSeconds > 0)
+}
+
 /** Runs with usable distance/duration data, for any running-stats calculation */
 export function getValidRuns(workouts: WorkoutSession[]): WorkoutSession[] {
-  return workouts.filter(w => w.type === 'run' && (w.distanceKm ?? 0) > 0 && w.durationSeconds > 0)
+  return getValidCardio(workouts, 'run')
+}
+
+/** Swims with usable distance/duration data, for any swimming-stats calculation */
+export function getValidSwims(workouts: WorkoutSession[]): WorkoutSession[] {
+  return getValidCardio(workouts, 'swim')
 }
 
 export interface RaceBest {
@@ -332,6 +341,109 @@ export function getRunProgress(runs: WorkoutSession[]): RunProgressPoint[] {
       durationSeconds: w.durationSeconds,
       paceSecPerKm: Math.round((w.durationSeconds / w.distanceKm!) * 10) / 10,
     }))
+    .sort((a, b) => new Date(a.rawDate).getTime() - new Date(b.rawDate).getTime())
+}
+
+export interface SwimDistance {
+  key: string
+  label: string
+  m: number
+}
+
+/** Standard pool distances tracked for swimming PRs */
+export const SWIM_DISTANCES: SwimDistance[] = [
+  { key: '100m', label: '100m', m: 100 },
+  { key: '200m', label: '200m', m: 200 },
+  { key: '400m', label: '400m', m: 400 },
+  { key: '800m', label: '800m', m: 800 },
+  { key: '1500m', label: '1500m', m: 1500 },
+]
+
+export interface SwimBest {
+  distanceM: number
+  durationSeconds: number
+  date: string
+}
+
+/**
+ * Best logged swim matching each standard pool distance — same nearest-distance matching
+ * as getRaceBests, since manual entries rarely hit a distance exactly.
+ */
+export function getSwimBests(swims: WorkoutSession[]): Map<string, SwimBest> {
+  const bests = new Map<string, SwimBest>()
+
+  for (const dist of SWIM_DISTANCES) {
+    const tolerance = dist.m <= 200 ? 0.15 : dist.m <= 800 ? 0.1 : 0.05
+    let best: WorkoutSession | null = null
+    let bestPace = Infinity
+
+    for (const swim of swims) {
+      const m = (swim.distanceKm ?? 0) * 1000
+      if (Math.abs(m - dist.m) / dist.m > tolerance) continue
+      const pace = swim.durationSeconds / m
+      if (pace < bestPace) {
+        bestPace = pace
+        best = swim
+      }
+    }
+
+    if (best) {
+      bests.set(dist.key, {
+        distanceM: Math.round((best.distanceKm ?? 0) * 1000),
+        durationSeconds: best.durationSeconds,
+        date: best.date,
+      })
+    }
+  }
+
+  return bests
+}
+
+export interface SwimmingSummary {
+  totalSwims: number
+  totalDistanceM: number
+  longestSwimM: number
+  bestPaceSecPer100m: number | null
+}
+
+/** Lifetime swimming totals — distance, swim count, longest swim, and fastest pace ever logged */
+export function getSwimmingSummary(swims: WorkoutSession[]): SwimmingSummary {
+  const distancesM = swims.map(s => (s.distanceKm ?? 0) * 1000)
+  const totalDistanceM = distancesM.reduce((sum, m) => sum + m, 0)
+  const longestSwimM = distancesM.reduce((max, m) => Math.max(max, m), 0)
+  const bestPaceSecPer100m = swims.length > 0
+    ? Math.min(...swims.map((s, i) => s.durationSeconds / (distancesM[i] / 100)))
+    : null
+
+  return {
+    totalSwims: swims.length,
+    totalDistanceM: Math.round(totalDistanceM),
+    longestSwimM: Math.round(longestSwimM),
+    bestPaceSecPer100m,
+  }
+}
+
+export interface SwimProgressPoint {
+  rawDate: string
+  label: string
+  distanceM: number
+  durationSeconds: number
+  paceSecPer100m: number
+}
+
+/** Chronological swim log for distance/pace-over-time charting */
+export function getSwimProgress(swims: WorkoutSession[]): SwimProgressPoint[] {
+  return swims
+    .map(w => {
+      const distanceM = (w.distanceKm ?? 0) * 1000
+      return {
+        rawDate: w.date,
+        label: formatChartLabel(w.date),
+        distanceM: Math.round(distanceM),
+        durationSeconds: w.durationSeconds,
+        paceSecPer100m: Math.round((w.durationSeconds / (distanceM / 100)) * 10) / 10,
+      }
+    })
     .sort((a, b) => new Date(a.rawDate).getTime() - new Date(b.rawDate).getTime())
 }
 

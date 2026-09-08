@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { Page, WorkoutSession } from './types'
 import { useWorkouts } from './hooks/useWorkouts'
 import { useActiveWorkout } from './hooks/useActiveWorkout'
@@ -9,14 +9,27 @@ import { useAchievements } from './hooks/useAchievements'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import Navigation from './components/Navigation'
 import AchievementToast from './components/AchievementToast'
-import Dashboard from './pages/Dashboard'
-import ActiveWorkout from './pages/ActiveWorkout'
-import History from './pages/History'
-import Exercises from './pages/Exercises'
-import Progress from './pages/Progress'
 import Login from './pages/Login'
-import Settings from './pages/Settings'
-import Friends from './pages/Friends'
+
+// Each page is its own chunk — Recharts (Progress), Leaflet (ActiveWorkout's GPS
+// map), and html2canvas (share-as-image, pulled in via History/Dashboard's
+// WorkoutCard) are all sizeable libraries only one page needs at a time, so there's
+// no reason for a Dashboard-only visit to download any of them upfront.
+const Dashboard = lazy(() => import('./pages/Dashboard'))
+const ActiveWorkout = lazy(() => import('./pages/ActiveWorkout'))
+const History = lazy(() => import('./pages/History'))
+const Exercises = lazy(() => import('./pages/Exercises'))
+const Progress = lazy(() => import('./pages/Progress'))
+const Settings = lazy(() => import('./pages/Settings'))
+const Friends = lazy(() => import('./pages/Friends'))
+
+function PageLoading() {
+  return (
+    <div className="flex items-center justify-center" style={{ minHeight: '50vh' }}>
+      <div className="text-gray-500 text-sm">Loading...</div>
+    </div>
+  )
+}
 
 function AppContent() {
   const [page, setPage] = useState<Page>('dashboard')
@@ -72,6 +85,7 @@ function AppContent() {
           minHeight: '100dvh',
         }}
       >
+        <Suspense fallback={<PageLoading />}>
         {page === 'dashboard' && (
           <Dashboard
             workouts={workoutsHook.workouts}
@@ -134,6 +148,7 @@ function AppContent() {
         {page === 'friends' && (
           <Friends weeklyGoal={settingsHook.weeklyGoal ?? 3} />
         )}
+        </Suspense>
       </div>
       <Navigation current={page} onChange={setPage} hasActive={activeHook.isActive} friendNotifications={notificationCount} />
       <AchievementToast justUnlocked={justUnlocked} onDismiss={dismissJustUnlocked} />

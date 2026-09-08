@@ -1,10 +1,13 @@
-import { useState, useRef } from 'react'
-import html2canvas from 'html2canvas'
+import { useState, useRef, lazy, Suspense } from 'react'
 import { WorkoutSession } from '../types'
 import { totalVolume, formatDuration, formatPace, formatSwimPace, effectiveWeight } from '../utils/calculations'
 import { categoryColors } from '../data/exercises'
 import ShareCard from './ShareCard'
-import RouteMap from './RouteMap'
+
+// Both are only needed once a user actually interacts with a card (expanding a
+// route, or sharing) — html2canvas and Leaflet are sizeable enough that every
+// workout card on the Dashboard shouldn't have to pull them in just to render.
+const RouteMap = lazy(() => import('./RouteMap'))
 
 interface Props {
   workout: WorkoutSession
@@ -21,7 +24,10 @@ export default function WorkoutCard({ workout, onDelete, onFavorite, bodyWeightK
 
   const handleShare = async () => {
     setSharing(true)
-    await new Promise(r => setTimeout(r, 100)) // let the card render
+    const [{ default: html2canvas }] = await Promise.all([
+      import('html2canvas'),
+      new Promise<void>(r => setTimeout(r, 100)), // let the card render
+    ])
     if (!shareRef.current) { setSharing(false); return }
 
     const canvas = await html2canvas(shareRef.current, {
@@ -153,7 +159,9 @@ export default function WorkoutCard({ workout, onDelete, onFavorite, bodyWeightK
       {hasRoute && (
         <div className="mb-3">
           {showRoute ? (
-            <RouteMap route={workout.route!} height={180} />
+            <Suspense fallback={<div className="rounded-lg bg-gray-800" style={{ height: 180 }} />}>
+              <RouteMap route={workout.route!} height={180} />
+            </Suspense>
           ) : (
             <button
               onClick={() => setShowRoute(true)}
