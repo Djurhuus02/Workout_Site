@@ -141,7 +141,6 @@ export const exercises: Exercise[] = [
   // ─── FULL BODY / FUNCTIONAL ───────────────────────────────────────────────
   { id: 'farmers_walk', name: "Farmer's Walk", category: 'full_body', primaryMuscles: ['Forearms', 'Traps'], secondaryMuscles: ['Core', 'Legs'], equipment: 'Dumbbell' },
   { id: 'suitcase_carry', name: 'Suitcase Carry', category: 'full_body', primaryMuscles: ['Core', 'Obliques'], secondaryMuscles: ['Traps', 'Forearms'], equipment: 'Dumbbell' },
-  { id: 'turkish_get_up', name: 'Turkish Get-Up', category: 'full_body', primaryMuscles: ['Shoulders', 'Core'], secondaryMuscles: ['Glutes', 'Hips'], equipment: 'Kettlebell' },
   { id: 'kettlebell_swing', name: 'Kettlebell Swing', category: 'full_body', primaryMuscles: ['Glutes', 'Hamstrings'], secondaryMuscles: ['Core', 'Shoulders'], equipment: 'Kettlebell' },
   { id: 'kettlebell_goblet_squat', name: 'Kettlebell Goblet Squat', category: 'full_body', primaryMuscles: ['Quads', 'Glutes'], secondaryMuscles: ['Core'], equipment: 'Kettlebell' },
   { id: 'thruster', name: 'Thruster', category: 'full_body', primaryMuscles: ['Quads', 'Glutes', 'Shoulders'], secondaryMuscles: ['Core', 'Triceps'], equipment: 'Barbell' },

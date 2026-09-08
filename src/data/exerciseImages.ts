@@ -1,16 +1,11 @@
-const PHOTO_BASE = 'https://cdn.jsdelivr.net/gh/yuhonas/free-exercise-db@main/exercises'
-const photo = (id: string, frame = 0) => `${PHOTO_BASE}/${id}/${frame}.jpg`
 const illus = (id: string) => `/exercise_illustrations/${id}.svg`
 
-// Most exercises use a hand-drawn illustration (consistent style, transparent
-// background — see public/exercise_illustrations). Most are sourced from the
-// Everkinetic project via bryllim/workout-guide (CC BY-SA 4.0, credited in
-// README); the ~19 with no free source available (mostly Olympic lifts) got a
-// custom illustration instead, built to match the same visual style. Only
-// turkish_get_up still uses a photo — seven different attempts at a custom
-// illustration never reached a legible standard (multi-point ground contact
-// poses are a real weak spot of this hand-drawn technique), so the photo
-// stays until a better source or approach turns up.
+// Every exercise uses a hand-drawn illustration (consistent style,
+// transparent background — see public/exercise_illustrations). Most are
+// sourced from the Everkinetic project via bryllim/workout-guide (CC BY-SA
+// 4.0, credited in README); the ~19 with no free source available (mostly
+// Olympic lifts) got a custom illustration instead, built to match the same
+// visual style.
 export const exerciseImageMap: Record<string, string> = {
   // ─── CHEST ────────────────────────────────────────────────────────────────
   bench_press:            illus('bench_press'),
@@ -143,7 +138,6 @@ export const exerciseImageMap: Record<string, string> = {
   power_snatch:           illus('power_snatch'),
   clean_and_press:        illus('clean_and_press'),
   farmers_walk:           illus('farmers_walk'),
-  turkish_get_up:         photo('Kettlebell_Turkish_Get-Up_Squat_style'),
   kettlebell_goblet_squat: illus('kettlebell_goblet_squat'),
   battle_ropes:           illus('battle_ropes'),
   box_jump:               illus('box_jump'),

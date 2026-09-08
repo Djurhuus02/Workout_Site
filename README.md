@@ -110,4 +110,4 @@ npm start
 
 ## 🙏 Credits
 
-Most exercise illustrations (`public/exercise_illustrations/`) are adapted from the [Everkinetic](https://github.com/everkinetic/data) project, expanded by Bryl Lim as [workout-guide](https://github.com/bryllim/workout-guide) — licensed [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). A handful of exercises with no free illustration available (mostly Olympic lifts) still use photos from [yuhonas/free-exercise-db](https://github.com/yuhonas/free-exercise-db) (Unlicense).
+Exercise illustrations (`public/exercise_illustrations/`) are adapted from the [Everkinetic](https://github.com/everkinetic/data) project, expanded by Bryl Lim as [workout-guide](https://github.com/bryllim/workout-guide) — licensed [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). The ~19 exercises with no free illustration available (mostly Olympic lifts) were hand-drawn to match the same style.
