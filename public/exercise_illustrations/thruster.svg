@@ -1,13 +1,61 @@
 <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
-<circle cx="256" cy="110" r="30" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-<path d="M 224 170 C 219 200, 216.0 215.0, 222.0 235.0 C 214.0 265.0, 216 270, 220 300 L 292 300 C 296 270, 298.0 265.0, 290.0 235.0 C 296.0 215.0, 293 200, 288 170 Z" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-<path d="M 222 176 L 196 142 L 190 104" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-<path d="M 290 176 L 316 142 L 322 104" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-<line x1="178" y1="98" x2="334" y2="98" stroke="#fff" stroke-width="6" stroke-linecap="round"/><rect x="171.0" y="81.0" width="14" height="34" rx="4" fill="#fff" stroke="none" transform="rotate(0.0 178 98)"/><rect x="327.0" y="81.0" width="14" height="34" rx="4" fill="#fff" stroke="none" transform="rotate(0.0 334 98)"/>
-<line x1="222" y1="300" x2="292" y2="300" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-<path d="M 226 300 C 210 330, 184 348, 176 380 C 170 420, 178 460, 186 492" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-<path d="M 288 300 C 304 330, 330 348, 338 380 C 344 420, 336 460, 328 492" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-<path d="M 176 380 C 188 370, 200 370, 212 378" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-<path d="M 338 380 C 326 370, 314 370, 302 378" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-<rect x="164" y="492" width="32" height="8" rx="3" fill="#fff" stroke="none"/><rect x="320" y="492" width="32" height="8" rx="3" fill="#fff" stroke="none"/>
+<circle cx="256" cy="96" r="30" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+<path d="M 214 160 C 232 140, 280 140, 298 160
+ L 312 194 C 298 216, 292 250, 288 290
+ C 286 320, 284 340, 294 358
+ L 294 316 L 218 316 L 218 358
+ C 228 340, 226 320, 224 290
+ C 220 250, 214 216, 200 194 Z" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 244 160 C 254 168, 262 174, 256 180" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 268 160 C 258 168, 250 174, 256 180" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 222 178 C 240 188, 256 192, 256 204
+ C 272 192, 272 188, 290 178" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 256 204 L 256 290" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 216 202 C 234 216, 250 220, 256 224
+ C 272 220, 282 216, 296 202" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<line x1="234" y1="238" x2="278" y2="238" stroke-width="2" stroke="#fff" stroke-linecap="round" fill="none"/>
+<line x1="232" y1="260" x2="280" y2="260" stroke-width="2" stroke="#fff" stroke-linecap="round" fill="none"/>
+<path d="M 222 210 C 228 230, 228 250, 222 268" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 290 210 C 284 230, 284 250, 290 268" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+
+<path d="M 216 168 C 222 182, 197.0 134.0, 197.0 150.0
+ C 197.0 164.0, 192 122, 196 132
+ C 202 140, 192 82, 198 92
+ L 206 94
+ C 202 80, 206 134, 200 126
+ C 206 130, 211.0 154.0, 207.0 140.0
+ C 205.0 128.0, 230 172, 216 168 Z" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 201.0 140.0 C 195.0 148.0, 195.0 158.0, 199.0 164.0" stroke-width="2" stroke="#fff" fill="none" stroke-linecap="round"/>
+
+
+<path d="M 296 168 C 290 182, 315.0 134.0, 315.0 150.0
+ C 315.0 164.0, 320 122, 316 132
+ C 310 140, 320 82, 314 92
+ L 306 94
+ C 310 80, 306 134, 312 126
+ C 306 130, 301.0 154.0, 305.0 140.0
+ C 307.0 128.0, 282 172, 296 168 Z" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 311.0 140.0 C 317.0 148.0, 317.0 158.0, 313.0 164.0" stroke-width="2" stroke="#fff" fill="none" stroke-linecap="round"/>
+
+<line x1="178" y1="88" x2="334" y2="88" stroke="#fff" stroke-width="6" stroke-linecap="round"/><rect x="171.0" y="71.0" width="14" height="34" rx="4" fill="#fff" stroke="none" transform="rotate(0.0 178 88)"/><rect x="327.0" y="71.0" width="14" height="34" rx="4" fill="#fff" stroke="none" transform="rotate(0.0 334 88)"/>
+<line x1="228" y1="316" x2="284" y2="316" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+<path d="M 228 316 C 224 350, 168 354, 170 392
+ C 171 442, 170 442, 168 492
+ L 189 492
+ C 189 442, 194 442, 194 392
+ C 196 354, 244 350, 236 316 Z" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 284 316 C 288 350, 344 354, 342 392
+ C 341 442, 363 442, 365 492
+ L 344 492
+ C 344 442, 318 442, 318 392
+ C 316 354, 268 350, 276 316 Z" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 180 386 C 186 392, 186 400, 182 406" stroke-width="2" stroke="#fff" fill="none" stroke-linecap="round"/>
+<path d="M 332 386 C 326 392, 326 400, 330 406" stroke-width="2" stroke="#fff" fill="none" stroke-linecap="round"/>
+<rect x="164" y="492" width="30" height="8" rx="3" fill="#fff" stroke="none"/><rect x="318" y="492" width="30" height="8" rx="3" fill="#fff" stroke="none"/>
+
+<path d="M 184 392 C 196 380, 208 380, 218 388" stroke-width="2" stroke="#fff" fill="none" stroke-linecap="round"/>
+<path d="M 328 392 C 316 380, 304 380, 294 388" stroke-width="2" stroke="#fff" fill="none" stroke-linecap="round"/>
 </svg>

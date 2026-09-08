@@ -1,13 +1,49 @@
 <svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
 <circle cx="258" cy="88" r="30" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-<path d="M 224 148 C 219 178, 220.0 208.0, 226.0 228.0 C 218.0 258.0, 224 278, 228 308 L 288 308 C 292 278, 298.0 258.0, 290.0 228.0 C 296.0 208.0, 297 178, 292 148 Z" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-<path d="M 224 154 L 200 118 L 196 84" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-<path d="M 292 154 L 316 118 L 320 84" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+<path d="M 214 152 C 232 132, 284 132, 302 152
+ L 316 186 C 302 208, 296 242, 292 282
+ C 290 312, 288 332, 298 350
+ L 298 318 L 218 318 L 218 350
+ C 228 332, 226 312, 224 282
+ C 220 242, 214 208, 200 186 Z" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 244 152 C 254 160, 262 166, 258 172" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 272 152 C 262 160, 254 166, 258 172" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 222 170 C 240 180, 256 184, 258 196
+ C 274 184, 276 180, 294 170" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 258 196 L 258 282" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 216 194 C 234 208, 250 212, 258 216
+ C 274 212, 286 208, 300 194" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<line x1="236" y1="230" x2="280" y2="230" stroke-width="2" stroke="#fff" stroke-linecap="round" fill="none"/>
+<line x1="234" y1="252" x2="282" y2="252" stroke-width="2" stroke="#fff" stroke-linecap="round" fill="none"/>
+<path d="M 222 202 C 228 222, 228 242, 222 260" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 294 202 C 288 222, 288 242, 294 260" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+
+<path d="M 216 160 C 222 174, 197.0 120.0, 197.0 136.0
+ C 197.0 150.0, 194 102, 198 112
+ C 204 120, 194 72, 200 82
+ L 208 84
+ C 204 70, 208 114, 202 106
+ C 208 110, 211.0 140.0, 207.0 126.0
+ C 205.0 114.0, 230 164, 216 160 Z" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 201.0 126.0 C 195.0 134.0, 195.0 144.0, 199.0 150.0" stroke-width="2" stroke="#fff" fill="none" stroke-linecap="round"/>
+
+
+<path d="M 300 160 C 294 174, 319.0 120.0, 319.0 136.0
+ C 319.0 150.0, 322 102, 318 112
+ C 312 120, 322 72, 316 82
+ L 308 84
+ C 312 70, 308 114, 314 106
+ C 308 110, 305.0 140.0, 309.0 126.0
+ C 311.0 114.0, 286 164, 300 160 Z" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 315.0 126.0 C 321.0 134.0, 321.0 144.0, 317.0 150.0" stroke-width="2" stroke="#fff" fill="none" stroke-linecap="round"/>
+
 <line x1="186" y1="78" x2="330" y2="78" stroke="#fff" stroke-width="6" stroke-linecap="round"/><rect x="179.0" y="61.0" width="14" height="34" rx="4" fill="#fff" stroke="none" transform="rotate(0.0 186 78)"/><rect x="323.0" y="61.0" width="14" height="34" rx="4" fill="#fff" stroke="none" transform="rotate(0.0 330 78)"/>
-<line x1="230" y1="308" x2="286" y2="308" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-<path d="M 234 308 C 210 330, 180 350, 158 380 C 148 400, 146 440, 150 472" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-<path d="M 282 308 C 300 330, 322 352, 350 380 C 368 402, 380 440, 388 480" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-<path d="M 158 380 C 168 372, 178 372, 186 378" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<line x1="230" y1="318" x2="286" y2="318" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 234 318 C 210 338, 180 356, 158 384 C 148 404, 146 440, 150 472" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 282 318 C 300 338, 322 358, 350 384 C 368 404, 380 440, 388 480" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 158 384 C 168 376, 178 376, 186 382" stroke-width="2" stroke="#fff" fill="none" stroke-linecap="round"/>
 <rect x="126" y="472" width="32" height="8" rx="3" fill="#fff" stroke="none"/>
 <g transform="rotate(28 388 480)"><rect x="374" y="480" width="34" height="8" rx="3" fill="#fff" stroke="none"/></g>
 </svg>
