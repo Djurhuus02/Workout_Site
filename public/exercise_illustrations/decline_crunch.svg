@@ -1,0 +1,20 @@
+<svg viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+<path d="M 330 220 L 450 180 L 450 300 L 330 300 Z" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<rect x="416" y="164" width="34" height="16" rx="4" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<line x1="60" y1="300" x2="330" y2="300" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<circle cx="120" cy="232" r="26" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 146 220 C 178 208, 208 202, 230 206
+ C 240 208, 244 214, 240 222
+ C 214 230, 182 230, 154 226
+ C 148 224, 144 222, 146 220 Z" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 164 216 C 186 210, 208 210, 226 216" stroke-width="2" stroke="#fff" fill="none" stroke-linecap="round"/>
+<path d="M 156 208 C 148 192, 146 174, 152 156" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 152 156 C 160 150, 170 150, 176 156" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 232 214
+ C 254 208, 276 210, 292 222
+ C 300 228, 302 238, 296 246
+ C 280 236, 262 232, 244 234
+ Z" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M 296 246 C 300 264, 300 282, 294 298" stroke="#fff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<rect x="280" y="294" width="26" height="8" rx="3" fill="#fff" stroke="none"/>
+</svg>

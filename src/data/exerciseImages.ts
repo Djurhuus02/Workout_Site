@@ -5,13 +5,12 @@ const illus = (id: string) => `/exercise_illustrations/${id}.svg`
 // Most exercises use a hand-drawn illustration (consistent style, transparent
 // background — see public/exercise_illustrations). Most are sourced from the
 // Everkinetic project via bryllim/workout-guide (CC BY-SA 4.0, credited in
-// README); the ~18 with no free source available (mostly Olympic lifts) got a
-// custom illustration instead, built to match the same visual style. Only 2
-// exercises (decline_crunch, turkish_get_up) still use a photo — a custom
-// illustration was attempted repeatedly for both but never reached a legible
-// standard (a bent/hinged-spine or multi-point pose is a real weak spot of
-// this hand-drawn technique), so the photo stays until a better source or
-// approach turns up.
+// README); the ~19 with no free source available (mostly Olympic lifts) got a
+// custom illustration instead, built to match the same visual style. Only
+// turkish_get_up still uses a photo — seven different attempts at a custom
+// illustration never reached a legible standard (multi-point ground contact
+// poses are a real weak spot of this hand-drawn technique), so the photo
+// stays until a better source or approach turns up.
 export const exerciseImageMap: Record<string, string> = {
   // ─── CHEST ────────────────────────────────────────────────────────────────
   bench_press:            illus('bench_press'),
@@ -127,7 +126,7 @@ export const exerciseImageMap: Record<string, string> = {
   russian_twist:          illus('russian_twist'),
   bicycle_crunch:         illus('bicycle_crunch'),
   crunch:                 illus('crunch'),
-  decline_crunch:         photo('Decline_Crunch'),
+  decline_crunch:         illus('decline_crunch'),
   leg_raise:              illus('leg_raise'),
   dragon_flag:            illus('dragon_flag'),
   pallof_press:           illus('pallof_press'),
