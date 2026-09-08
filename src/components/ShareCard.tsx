@@ -1,14 +1,16 @@
 import { forwardRef } from 'react'
 import { WorkoutSession } from '../types'
-import { totalVolume, formatDuration, formatPace } from '../utils/calculations'
+import { totalVolume, formatDuration, formatPace, formatSwimPace, effectiveWeight } from '../utils/calculations'
 
 interface Props {
   workout: WorkoutSession
+  bodyWeightKg: number | null
 }
 
-const ShareCard = forwardRef<HTMLDivElement, Props>(({ workout }, ref) => {
+const ShareCard = forwardRef<HTMLDivElement, Props>(({ workout, bodyWeightKg }, ref) => {
   const isRun = workout.type === 'run'
-  const volume = totalVolume(workout)
+  const isSwim = workout.type === 'swim'
+  const volume = totalVolume(workout, bodyWeightKg)
   const date = new Date(workout.date).toLocaleDateString('en-GB', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   })
@@ -56,6 +58,10 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(({ workout }, ref) => {
           { label: 'Duration', value: formatDuration(workout.durationSeconds) },
           { label: 'Distance', value: `${workout.distanceKm} km` },
           { label: 'Pace', value: formatPace(workout.distanceKm ?? 0, workout.durationSeconds) },
+        ] : isSwim ? [
+          { label: 'Duration', value: formatDuration(workout.durationSeconds) },
+          { label: 'Distance', value: `${Math.round((workout.distanceKm ?? 0) * 1000)} m` },
+          { label: 'Pace', value: formatSwimPace((workout.distanceKm ?? 0) * 1000, workout.durationSeconds) },
         ] : [
           { label: 'Duration', value: formatDuration(workout.durationSeconds) },
           { label: 'Volume', value: `${volume.toLocaleString()} kg` },
@@ -74,9 +80,11 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(({ workout }, ref) => {
 
       {/* Exercises */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 20 }}>
-        {!isRun && workout.exercises.slice(0, 6).map(ex => {
+        {!isRun && !isSwim && workout.exercises.slice(0, 6).map(ex => {
           const best = ex.sets
-            .filter(s => s.completed && s.weight > 0 && s.reps > 0)
+            .filter(s => s.completed && s.reps > 0)
+            .map(s => ({ weight: effectiveWeight(ex.exerciseId, s.weight, bodyWeightKg), reps: s.reps }))
+            .filter(s => s.weight > 0)
             .sort((a, b) => b.weight - a.weight)[0]
           const completedSets = ex.sets.filter(s => s.completed).length
           return (
@@ -92,7 +100,7 @@ const ShareCard = forwardRef<HTMLDivElement, Props>(({ workout }, ref) => {
             </div>
           )
         })}
-        {!isRun && workout.exercises.length > 6 && (
+        {!isRun && !isSwim && workout.exercises.length > 6 && (
           <p style={{ margin: 0, fontSize: 12, color: 'rgba(255,255,255,0.25)', textAlign: 'center' }}>
             +{workout.exercises.length - 6} more
           </p>

@@ -5,9 +5,10 @@ interface Props {
   workouts: WorkoutSession[]
   onDelete: (id: string) => void
   onFavorite: (id: string) => void
+  bodyWeightKg: number | null
 }
 
-export default function History({ workouts, onDelete, onFavorite }: Props) {
+export default function History({ workouts, onDelete, onFavorite, bodyWeightKg }: Props) {
   if (workouts.length === 0) {
     return (
       <div className="px-4 pt-6 pb-6">
@@ -50,6 +51,7 @@ export default function History({ workouts, onDelete, onFavorite }: Props) {
                   workout={w}
                   onDelete={() => onDelete(w.id)}
                   onFavorite={() => onFavorite(w.id)}
+                  bodyWeightKg={bodyWeightKg}
                 />
               ))}
             </div>

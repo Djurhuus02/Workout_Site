@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react'
 import html2canvas from 'html2canvas'
 import { WorkoutSession } from '../types'
-import { totalVolume, formatDuration, formatPace } from '../utils/calculations'
+import { totalVolume, formatDuration, formatPace, formatSwimPace, effectiveWeight } from '../utils/calculations'
 import { categoryColors } from '../data/exercises'
 import ShareCard from './ShareCard'
 import RouteMap from './RouteMap'
@@ -10,9 +10,10 @@ interface Props {
   workout: WorkoutSession
   onDelete?: () => void
   onFavorite?: () => void
+  bodyWeightKg: number | null
 }
 
-export default function WorkoutCard({ workout, onDelete, onFavorite }: Props) {
+export default function WorkoutCard({ workout, onDelete, onFavorite, bodyWeightKg }: Props) {
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [sharing, setSharing] = useState(false)
   const [showRoute, setShowRoute] = useState(false)
@@ -48,8 +49,9 @@ export default function WorkoutCard({ workout, onDelete, onFavorite }: Props) {
     }, 'image/png')
   }
   const isRun = workout.type === 'run'
+  const isSwim = workout.type === 'swim'
   const hasRoute = isRun && !!workout.route && workout.route.length > 1
-  const volume = totalVolume(workout)
+  const volume = totalVolume(workout, bodyWeightKg)
   const completedSets = workout.exercises.reduce((n, e) => n + e.sets.filter(s => s.completed).length, 0)
   const date = new Date(workout.date)
   const dateStr = date.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
@@ -60,6 +62,7 @@ export default function WorkoutCard({ workout, onDelete, onFavorite }: Props) {
         <div>
           <h3 className="font-semibold text-white">
             {isRun && <span className="no-invert mr-1.5">🏃</span>}
+            {isSwim && <span className="no-invert mr-1.5">🏊</span>}
             {workout.name}
           </h3>
           <p className="text-xs text-gray-500 mt-0.5">{dateStr}</p>
@@ -117,6 +120,17 @@ export default function WorkoutCard({ workout, onDelete, onFavorite }: Props) {
               <p className="text-sm font-medium text-white">{formatPace(workout.distanceKm ?? 0, workout.durationSeconds)}</p>
             </div>
           </>
+        ) : isSwim ? (
+          <>
+            <div className="text-center">
+              <p className="text-xs text-gray-500">Distance</p>
+              <p className="text-sm font-medium text-white">{Math.round((workout.distanceKm ?? 0) * 1000)} m</p>
+            </div>
+            <div className="text-center">
+              <p className="text-xs text-gray-500">Pace</p>
+              <p className="text-sm font-medium text-white">{formatSwimPace((workout.distanceKm ?? 0) * 1000, workout.durationSeconds)}</p>
+            </div>
+          </>
         ) : (
           <>
             <div className="text-center">
@@ -153,9 +167,11 @@ export default function WorkoutCard({ workout, onDelete, onFavorite }: Props) {
 
       {/* Exercise list */}
       <div className="space-y-1">
-        {!isRun && workout.exercises.map(ex => {
+        {!isRun && !isSwim && workout.exercises.map(ex => {
           const best = ex.sets
-            .filter(s => s.completed && s.weight > 0 && s.reps > 0)
+            .filter(s => s.completed && s.reps > 0)
+            .map(s => ({ weight: effectiveWeight(ex.exerciseId, s.weight, bodyWeightKg), reps: s.reps }))
+            .filter(s => s.weight > 0)
             .sort((a, b) => b.weight - a.weight)[0]
           const completedCount = ex.sets.filter(s => s.completed).length
           return (
@@ -177,7 +193,7 @@ export default function WorkoutCard({ workout, onDelete, onFavorite }: Props) {
 
       {/* Hidden share card for html2canvas */}
       <div style={{ position: 'fixed', left: -9999, top: 0, pointerEvents: 'none', zIndex: -1 }}>
-        <ShareCard ref={shareRef} workout={workout} />
+        <ShareCard ref={shareRef} workout={workout} bodyWeightKg={bodyWeightKg} />
       </div>
     </div>
   )

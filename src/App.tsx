@@ -29,7 +29,7 @@ function AppContent() {
   const settingsHook = useUserSettings()
   const bodyWeightHook = useBodyWeight()
   const notificationCount = useNotifications()
-  const { achievements, unlockedIds, justUnlocked, dismissJustUnlocked } = useAchievements(workoutsHook.workouts, workoutsHook.loading)
+  const { achievements, unlockedIds, justUnlocked, dismissJustUnlocked } = useAchievements(workoutsHook.workouts, workoutsHook.loading, bodyWeightHook.latest)
 
   useEffect(() => {
     localStorage.setItem('theme', theme)
@@ -83,6 +83,7 @@ function AppContent() {
             weeklyGoal={settingsHook.weeklyGoal}
             onSaveWeeklyGoal={settingsHook.saveWeeklyGoal}
             user={user}
+            bodyWeightKg={bodyWeightHook.latest}
           />
         )}
         {page === 'workout' && (
@@ -109,6 +110,7 @@ function AppContent() {
             workouts={workoutsHook.workouts}
             onDelete={workoutsHook.deleteWorkout}
             onFavorite={workoutsHook.toggleFavorite}
+            bodyWeightKg={bodyWeightHook.latest}
           />
         )}
         {page === 'exercises' && <Exercises />}

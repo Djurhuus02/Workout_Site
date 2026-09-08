@@ -1,4 +1,17 @@
 import { WorkoutSession, PersonalRecord, ExerciseCategory, LatLng } from '../types'
+import { exercises as exerciseList } from '../data/exercises'
+
+const bodyweightExerciseIds = new Set(exerciseList.filter(e => e.equipment === 'Bodyweight').map(e => e.id))
+
+/**
+ * Weight to use for PR/volume/1RM purposes. Bodyweight exercises add the lifter's body
+ * weight to whatever extra weight was logged — most bodyweight sets are logged with 0
+ * extra weight, and without this they'd never register a PR or contribute volume at all.
+ */
+export function effectiveWeight(exerciseId: string, setWeight: number, bodyWeightKg: number | null): number {
+  if (!bodyweightExerciseIds.has(exerciseId)) return setWeight
+  return (bodyWeightKg ?? 0) + setWeight
+}
 
 const EARTH_RADIUS_KM = 6371
 
@@ -39,30 +52,32 @@ export function calculateOneRM(weight: number, reps: number): number {
 }
 
 /** Total volume for a workout session (sum of weight × reps for all completed sets) */
-export function totalVolume(session: WorkoutSession): number {
+export function totalVolume(session: WorkoutSession, bodyWeightKg: number | null): number {
   return session.exercises.reduce((total, ex) => {
     return total + ex.sets.reduce((setTotal, s) => {
       if (!s.completed) return setTotal
-      return setTotal + s.weight * s.reps
+      return setTotal + effectiveWeight(ex.exerciseId, s.weight, bodyWeightKg) * s.reps
     }, 0)
   }, 0)
 }
 
 /** Get personal records per exercise across all workouts */
-export function getPersonalRecords(workouts: WorkoutSession[]): Map<string, PersonalRecord> {
+export function getPersonalRecords(workouts: WorkoutSession[], bodyWeightKg: number | null): Map<string, PersonalRecord> {
   const prs = new Map<string, PersonalRecord>()
 
   for (const workout of workouts) {
     for (const exercise of workout.exercises) {
       for (const set of exercise.sets) {
-        if (!set.completed || set.reps <= 0 || set.weight <= 0) continue
-        const oneRM = calculateOneRM(set.weight, set.reps)
+        if (!set.completed || set.reps <= 0) continue
+        const weight = effectiveWeight(exercise.exerciseId, set.weight, bodyWeightKg)
+        if (weight <= 0) continue
+        const oneRM = calculateOneRM(weight, set.reps)
         const existing = prs.get(exercise.exerciseId)
         if (!existing || oneRM > existing.estimatedOneRM) {
           prs.set(exercise.exerciseId, {
             exerciseId: exercise.exerciseId,
             exerciseName: exercise.exerciseName,
-            weight: set.weight,
+            weight,
             reps: set.reps,
             estimatedOneRM: Math.round(oneRM * 10) / 10,
             date: workout.date,
@@ -89,12 +104,15 @@ export interface ProgressPoint {
   estimatedOneRM: number
 }
 
-export function getExerciseProgress(workouts: WorkoutSession[], exerciseId: string): ProgressPoint[] {
+export function getExerciseProgress(workouts: WorkoutSession[], exerciseId: string, bodyWeightKg: number | null): ProgressPoint[] {
   return workouts
     .filter(w => w.exercises.some(e => e.exerciseId === exerciseId))
     .map(w => {
       const exercise = w.exercises.find(e => e.exerciseId === exerciseId)!
-      const completedSets = exercise.sets.filter(s => s.completed && s.reps > 0 && s.weight > 0)
+      const completedSets = exercise.sets
+        .filter(s => s.completed && s.reps > 0)
+        .map(s => ({ reps: s.reps, weight: effectiveWeight(exerciseId, s.weight, bodyWeightKg) }))
+        .filter(s => s.weight > 0)
       if (completedSets.length === 0) return null
       const bestSet = completedSets.reduce((best, s) =>
         calculateOneRM(s.weight, s.reps) > calculateOneRM(best.weight, best.reps) ? s : best
@@ -127,6 +145,15 @@ export function formatPace(distanceKm: number, durationSeconds: number): string 
   const m = Math.floor(secPerKm / 60)
   const s = Math.round(secPerKm % 60)
   return `${m}:${String(s).padStart(2, '0')} /km`
+}
+
+/** Pace as min:sec per 100m, e.g. "1:45 /100m" — the standard swim-pace unit */
+export function formatSwimPace(distanceM: number, durationSeconds: number): string {
+  if (distanceM <= 0 || durationSeconds <= 0) return '—'
+  const secPer100m = durationSeconds / (distanceM / 100)
+  const m = Math.floor(secPer100m / 60)
+  const s = Math.round(secPer100m % 60)
+  return `${m}:${String(s).padStart(2, '0')} /100m`
 }
 
 export function formatWeight(kg: number): string {
@@ -318,6 +345,7 @@ export interface CategoryVolumePoint {
 export function getCategoryVolumeByWeek(
   workouts: WorkoutSession[],
   exerciseCategoryMap: Map<string, ExerciseCategory>,
+  bodyWeightKg: number | null,
   weeks: number = 8
 ): CategoryVolumePoint[] {
   const buckets = new Map<string, CategoryVolumePoint>()
@@ -337,7 +365,7 @@ export function getCategoryVolumeByWeek(
     for (const exercise of workout.exercises) {
       const category = exerciseCategoryMap.get(exercise.exerciseId)
       if (!category) continue
-      const volume = exercise.sets.reduce((sum, s) => (s.completed ? sum + s.weight * s.reps : sum), 0)
+      const volume = exercise.sets.reduce((sum, s) => (s.completed ? sum + effectiveWeight(exercise.exerciseId, s.weight, bodyWeightKg) * s.reps : sum), 0)
       if (volume <= 0) continue
       bucket[category] = ((bucket[category] as number) ?? 0) + volume
     }

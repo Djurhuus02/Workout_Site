@@ -10,6 +10,7 @@ import {
   getValidRuns,
   formatDuration,
   formatPace,
+  effectiveWeight,
   RACE_DISTANCES,
 } from '../utils/calculations'
 import { exercises, categoryHexColors, categoryLabels } from '../data/exercises'
@@ -37,24 +38,26 @@ export default function Progress({ workouts, bodyWeightLogs, onAddBodyWeight, on
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [bwInput, setBwInput] = useState('')
 
-  const prs = useMemo(() => getPersonalRecords(workouts), [workouts])
+  const bodyWeightKg = bodyWeightLogs[0]?.weight_kg ?? null
+
+  const prs = useMemo(() => getPersonalRecords(workouts, bodyWeightKg), [workouts, bodyWeightKg])
 
   // Only show exercises that have been logged
   const loggedExerciseIds = useMemo(() => {
     const ids = new Set<string>()
     for (const w of workouts) {
       for (const e of w.exercises) {
-        if (e.sets.some(s => s.completed && s.weight > 0)) {
+        if (e.sets.some(s => s.completed && effectiveWeight(e.exerciseId, s.weight, bodyWeightKg) > 0)) {
           ids.add(e.exerciseId)
         }
       }
     }
     return ids
-  }, [workouts])
+  }, [workouts, bodyWeightKg])
 
   const progressData = useMemo(() =>
-    selectedId ? getExerciseProgress(workouts, selectedId) : [],
-    [workouts, selectedId]
+    selectedId ? getExerciseProgress(workouts, selectedId, bodyWeightKg) : [],
+    [workouts, selectedId, bodyWeightKg]
   )
 
   const exerciseCategoryMap = useMemo(
@@ -62,8 +65,8 @@ export default function Progress({ workouts, bodyWeightLogs, onAddBodyWeight, on
     []
   )
   const categoryVolumeData = useMemo(
-    () => getCategoryVolumeByWeek(workouts, exerciseCategoryMap, 8),
-    [workouts, exerciseCategoryMap]
+    () => getCategoryVolumeByWeek(workouts, exerciseCategoryMap, bodyWeightKg, 8),
+    [workouts, exerciseCategoryMap, bodyWeightKg]
   )
   const presentCategories = useMemo(() => {
     const cats = new Set<ExerciseCategory>()

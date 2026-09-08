@@ -6,6 +6,7 @@ export interface AchievementContext {
   prs: Map<string, PersonalRecord>
   currentStreak: number
   longestStreak: number
+  bodyWeightKg: number | null
 }
 
 export interface Achievement {
@@ -78,14 +79,14 @@ export const achievements: Achievement[] = [
     name: '10-Ton Club',
     description: 'Lift 10,000kg total volume in a single session',
     icon: '🏋️',
-    isUnlocked: ctx => ctx.workouts.some(w => totalVolume(w) >= 10000),
+    isUnlocked: ctx => ctx.workouts.some(w => totalVolume(w, ctx.bodyWeightKg) >= 10000),
   },
   {
     id: 'volume_lifetime_100k',
     name: '100k Lifetime',
     description: 'Lift 100,000kg total across all workouts',
     icon: '🚛',
-    isUnlocked: ctx => ctx.workouts.reduce((sum, w) => sum + totalVolume(w), 0) >= 100000,
+    isUnlocked: ctx => ctx.workouts.reduce((sum, w) => sum + totalVolume(w, ctx.bodyWeightKg), 0) >= 100000,
   },
   {
     id: 'marathon_session',

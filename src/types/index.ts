@@ -65,8 +65,8 @@ export interface WorkoutSession {
   durationSeconds: number
   favorited?: boolean
   notes?: string
-  /** Absent/'strength' = a normal lifting session; 'run' = a manually logged or GPS-tracked run (no exercises) */
-  type?: 'strength' | 'run'
+  /** Absent/'strength' = a normal lifting session; 'run'/'swim' = manually logged cardio (no exercises) */
+  type?: 'strength' | 'run' | 'swim'
   distanceKm?: number
   /** Present only for GPS-tracked runs */
   route?: RoutePoint[]

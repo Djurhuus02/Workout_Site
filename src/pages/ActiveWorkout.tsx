@@ -4,9 +4,10 @@ import ExercisePicker from '../components/ExercisePicker'
 import SetRow from '../components/SetRow'
 import ExerciseImageModal from '../components/ExerciseImageModal'
 import LogRunModal from '../components/LogRunModal'
+import LogSwimModal from '../components/LogSwimModal'
 import TrackRun from '../components/TrackRun'
 import { Exercise, WorkoutExercise, WorkoutSet, WorkoutSession } from '../types'
-import { formatDuration, getPersonalRecords, calculateOneRM, suggestNextSet } from '../utils/calculations'
+import { formatDuration, getPersonalRecords, calculateOneRM, suggestNextSet, effectiveWeight } from '../utils/calculations'
 import { exercises as exerciseList } from '../data/exercises'
 import { exerciseImageMap } from '../data/exerciseImages'
 
@@ -89,6 +90,7 @@ export default function ActiveWorkout({
   const [showPicker, setShowPicker] = useState(false)
   const [showLogRun, setShowLogRun] = useState(false)
   const [showTrackRun, setShowTrackRun] = useState(false)
+  const [showLogSwim, setShowLogSwim] = useState(false)
   const [elapsed, setElapsed] = useState(0)
   const [editingName, setEditingName] = useState(false)
   const [showFinishModal, setShowFinishModal] = useState(false)
@@ -120,8 +122,8 @@ export default function ActiveWorkout({
 
   // Compute saved PRs (excluding current in-progress workout)
   const savedPRs = useMemo(
-    () => getPersonalRecords(workouts.filter(w => w.id !== active?.id)),
-    [workouts, active?.id]
+    () => getPersonalRecords(workouts.filter(w => w.id !== active?.id), bodyWeightKg ?? null),
+    [workouts, active?.id, bodyWeightKg]
   )
 
   useEffect(() => {
@@ -267,6 +269,13 @@ export default function ActiveWorkout({
           </button>
         </div>
 
+        <button
+          onClick={() => setShowLogSwim(true)}
+          className="w-full py-4 rounded-xl border border-gray-700 text-gray-300 font-semibold hover:border-orange-500 hover:text-orange-500 transition-colors mb-4"
+        >
+          <span className="no-invert">🏊</span> Log a Swim
+        </button>
+
         <div className="bg-gray-900 rounded-xl p-6 border border-gray-800 text-center">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="w-12 h-12 mx-auto mb-3 text-gray-700">
             <path d="M6.5 6.5h11M6.5 12h11M6.5 17.5h11" />
@@ -282,6 +291,12 @@ export default function ActiveWorkout({
           <LogRunModal
             onSave={session => { onLogRun(session); setShowLogRun(false) }}
             onClose={() => setShowLogRun(false)}
+          />
+        )}
+        {showLogSwim && (
+          <LogSwimModal
+            onSave={session => { onLogRun(session); setShowLogSwim(false) }}
+            onClose={() => setShowLogSwim(false)}
           />
         )}
         {showTrackRun && (
@@ -429,7 +444,7 @@ export default function ActiveWorkout({
                           isBodyweight={isBodyweight}
                           bodyWeightKg={bodyWeightKg}
                           isPR={isPR}
-                          onCompleted={() => handleSetCompleted(entry.id, set.id, entry.exerciseId, set.weight, set.reps)}
+                          onCompleted={() => handleSetCompleted(entry.id, set.id, entry.exerciseId, effectiveWeight(entry.exerciseId, set.weight, bodyWeightKg ?? null), set.reps)}
                           suggestion={suggestion}
                         />
                       )

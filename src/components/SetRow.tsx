@@ -49,14 +49,15 @@ export default function SetRow({ set, index, previous, onUpdate, onDelete, isBod
         <span className="w-16 text-center text-xs text-gray-600 truncate">{prevLabel}</span>
 
         {isBodyweight ? (
-          /* ── Bodyweight mode ── */
-          <div className="flex items-center gap-1.5 flex-1">
-            <span className="px-2.5 py-1 rounded bg-gray-700 text-orange-400 text-xs font-bold tracking-wide">
-              BW{bodyWeightKg ? ` ${bodyWeightKg}kg` : ''}
+          /* ── Bodyweight mode — kept compact since this row already carries a lot: */
+          /* set#, prev, badge, stepper, reps, complete, delete all fit one line on mobile */
+          <div className="flex items-center gap-1 flex-1" title={bodyWeightKg ? `Bodyweight ${bodyWeightKg}kg + added weight` : 'Bodyweight'}>
+            <span className="px-2 py-1 rounded bg-gray-700 text-orange-400 text-xs font-bold tracking-wide flex-shrink-0">
+              BW
             </span>
             <button
               onClick={() => handleWeight(-2.5)}
-              className="w-7 h-7 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 flex items-center justify-center text-lg leading-none"
+              className="w-6 h-6 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 flex items-center justify-center text-base leading-none flex-shrink-0"
             >
               −
             </button>
@@ -68,15 +69,14 @@ export default function SetRow({ set, index, previous, onUpdate, onDelete, isBod
               value={set.weight || ''}
               placeholder="0"
               onChange={e => onUpdate({ weight: parseFloat(e.target.value) || 0 })}
-              className="w-12 text-center bg-gray-700 border border-gray-600 rounded px-1 py-1 text-white text-sm focus:outline-none focus:border-orange-500"
+              className="w-10 text-center bg-gray-700 border border-gray-600 rounded px-1 py-1 text-white text-sm focus:outline-none focus:border-orange-500"
             />
             <button
               onClick={() => handleWeight(2.5)}
-              className="w-7 h-7 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 flex items-center justify-center text-lg leading-none"
+              className="w-6 h-6 rounded bg-gray-700 text-gray-300 hover:bg-gray-600 flex items-center justify-center text-base leading-none flex-shrink-0"
             >
               +
             </button>
-            <span className="text-xs text-gray-500">+kg</span>
           </div>
         ) : (
           /* ── Weighted mode ── */

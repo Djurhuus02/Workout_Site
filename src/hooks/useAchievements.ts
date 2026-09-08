@@ -5,7 +5,7 @@ import { achievements, Achievement, AchievementContext } from '../data/achieveme
 import { getPersonalRecords, getCurrentStreak, getLongestStreak } from '../utils/calculations'
 import { loadUnlocked, saveUnlocked } from '../lib/achievementStorage'
 
-export function useAchievements(workouts: WorkoutSession[], loading: boolean) {
+export function useAchievements(workouts: WorkoutSession[], loading: boolean, bodyWeightKg: number | null) {
   const [unlockedIds, setUnlockedIds] = useState<Set<string>>(() => loadUnlocked())
   const [justUnlocked, setJustUnlocked] = useState<Achievement[]>([])
   // True once the initial workout history has been fetched at least once —
@@ -15,10 +15,11 @@ export function useAchievements(workouts: WorkoutSession[], loading: boolean) {
 
   const ctx: AchievementContext = useMemo(() => ({
     workouts,
-    prs: getPersonalRecords(workouts),
+    prs: getPersonalRecords(workouts, bodyWeightKg),
     currentStreak: getCurrentStreak(workouts),
     longestStreak: getLongestStreak(workouts),
-  }), [workouts])
+    bodyWeightKg,
+  }), [workouts, bodyWeightKg])
 
   useEffect(() => {
     if (loading) return

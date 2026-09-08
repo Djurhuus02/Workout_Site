@@ -122,9 +122,10 @@ interface Props {
   weeklyGoal: number | null
   onSaveWeeklyGoal: (goal: number | null) => void
   user?: User | null
+  bodyWeightKg: number | null
 }
 
-export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWorkout, onFavoriteWorkout, onStartTemplate, weeklyGoal, onSaveWeeklyGoal, user }: Props) {
+export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWorkout, onFavoriteWorkout, onStartTemplate, weeklyGoal, onSaveWeeklyGoal, user, bodyWeightKg }: Props) {
   const [mounted, setMounted] = useState(false)
   const [hoveredTemplate, setHoveredTemplate] = useState<number | null>(null)
   const [showGoalPicker, setShowGoalPicker] = useState(false)
@@ -136,7 +137,7 @@ export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWork
   const weekStart = getWeekStartDate()
 
   const thisWeek = workouts.filter(w => new Date(w.date) >= weekStart)
-  const weekVolume = thisWeek.reduce((sum, w) => sum + totalVolume(w), 0)
+  const weekVolume = thisWeek.reduce((sum, w) => sum + totalVolume(w, bodyWeightKg), 0)
 
   const avgSessionDisplay = (() => {
     if (workouts.length === 0) return '—'
@@ -361,7 +362,7 @@ export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWork
               onClick={() => { onStartTemplate(t.name, t.exercises); onNavigate('workout') }}
             />
           ))}
-          {workouts.filter(w => w.favorited && w.type !== 'run').map((w, i) => (
+          {workouts.filter(w => w.favorited && w.type !== 'run' && w.type !== 'swim').map((w, i) => (
             <TemplateRow
               key={w.id}
               name={w.name}
@@ -391,7 +392,7 @@ export default function Dashboard({ workouts, isActive, onNavigate, onDeleteWork
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {workouts.slice(0, 3).map(w => (
-                <WorkoutCard key={w.id} workout={w} onDelete={() => onDeleteWorkout(w.id)} onFavorite={() => onFavoriteWorkout(w.id)} />
+                <WorkoutCard key={w.id} workout={w} onDelete={() => onDeleteWorkout(w.id)} onFavorite={() => onFavoriteWorkout(w.id)} bodyWeightKg={bodyWeightKg} />
               ))}
             </div>
           </div>
