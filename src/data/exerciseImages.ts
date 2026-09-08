@@ -5,11 +5,13 @@ const illus = (id: string) => `/exercise_illustrations/${id}.svg`
 // Most exercises use a hand-drawn illustration (consistent style, transparent
 // background — see public/exercise_illustrations). Most are sourced from the
 // Everkinetic project via bryllim/workout-guide (CC BY-SA 4.0, credited in
-// README); the ~17 with no free source available (mostly Olympic lifts) got a
-// custom illustration instead, built to match the same visual style. Only 3
-// exercises (decline_crunch, incline_db_fly, turkish_get_up) still use a
-// photo — a custom illustration was attempted for all three but didn't reach
-// a legible standard, so the photo stays until a better source turns up.
+// README); the ~18 with no free source available (mostly Olympic lifts) got a
+// custom illustration instead, built to match the same visual style. Only 2
+// exercises (decline_crunch, turkish_get_up) still use a photo — a custom
+// illustration was attempted repeatedly for both but never reached a legible
+// standard (a bent/hinged-spine or multi-point pose is a real weak spot of
+// this hand-drawn technique), so the photo stays until a better source or
+// approach turns up.
 export const exerciseImageMap: Record<string, string> = {
   // ─── CHEST ────────────────────────────────────────────────────────────────
   bench_press:            illus('bench_press'),
@@ -19,7 +21,7 @@ export const exerciseImageMap: Record<string, string> = {
   incline_db_bench_press: illus('incline_db_bench_press'),
   decline_db_bench_press: illus('decline_db_bench_press'),
   db_fly:                 illus('db_fly'),
-  incline_db_fly:         photo('Incline_Dumbbell_Flyes'),
+  incline_db_fly:         illus('incline_db_fly'),
   cable_fly_low:          illus('cable_fly_low'),
   cable_fly_high:         illus('cable_fly_high'),
   cable_fly_mid:          illus('cable_fly_mid'),
