@@ -41,7 +41,7 @@ A clean and simple workout tracker built to log sessions, follow progress, and k
 - **Auth & Database:** Supabase (with Row Level Security enforcing per-user data access)
 - **Maps & Routing:** MapTiler (tiles), OSRM via the free FOSSGIS routing server (route suggestions)
 - **Hosting:** Vercel, deploying automatically on every push to `main`
-- **Analytics:** Vercel Web Analytics
+- **Analytics:** Vercel Web Analytics and Speed Insights
 
 ---
 
