@@ -2,7 +2,7 @@
 
 A clean and simple workout tracker built to log sessions, follow progress, and keep training data synced per user.
 
-**Live app:** [LiftTracker](https://workout-site-app-esc8c4eugsfsbzay.swedencentral-01.azurewebsites.net/)  
+**Live app:** [LiftTracker](https://workout-site-rouge.vercel.app/#)  
 **Repository:** [Workout_Site](https://github.com/Djurhuus02/Workout_Site)
 
 ---
@@ -38,10 +38,10 @@ A clean and simple workout tracker built to log sessions, follow progress, and k
 ## 🧱 Tech Stack
 
 - **Frontend:** React, TypeScript, Vite, Tailwind CSS, Recharts (charts), Leaflet/react-leaflet (maps)
-- **Auth & Database:** Supabase
+- **Auth & Database:** Supabase (with Row Level Security enforcing per-user data access)
 - **Maps & Routing:** MapTiler (tiles), OSRM via the free FOSSGIS routing server (route suggestions)
-- **Hosting:** Azure App Service (served via a small Express app)
-- **CI/CD:** GitHub Actions
+- **Hosting:** Vercel, deploying automatically on every push to `main`
+- **Analytics:** Vercel Web Analytics
 
 ---
 
@@ -56,7 +56,7 @@ LiftTracker is a small full-stack project focused on building a modern workout l
 - GPS-based running features
 - a clean responsive UI
 
-The goal was to build something practical while learning how React, Supabase, GitHub Actions, and Azure work together in a real deployment flow.
+The goal was to build something practical while learning how React, Supabase, and a real git-based deployment flow work together.
 
 ---
 
@@ -104,7 +104,7 @@ npm run build
 npm start
 ```
 
-`npm run build` type-checks and produces a static build in `dist/`; `npm start` serves it via the Express server in `server.js`. Deploys to Azure App Service run through the GitHub Actions workflow in `.github/workflows/`, which needs the same three variables above set as repository secrets.
+`npm run build` type-checks and produces a static build in `dist/`; `npm start` serves it locally via the Express server in `server.js` for a quick production preview. The live site deploys automatically through Vercel on every push to `main`, which needs the same three environment variables above set as Vercel project environment variables.
 
 ---
 
